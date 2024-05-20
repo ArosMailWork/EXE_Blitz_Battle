@@ -277,7 +277,7 @@ namespace FishNet.Object
             _isStatic = gameObject.isStatic;
             RuntimeChildNetworkBehaviours = CollectionCaches<NetworkBehaviour>.RetrieveList();
             SetChildDespawnedState();
-#if PREDICTION_V2
+#if !PREDICTION_1
             //Prediction_Awake();
 #endif
         }
@@ -337,9 +337,25 @@ namespace FishNet.Object
 
         private void OnDestroy()
         {
-            //Already being deinitialized by FishNet.
+            /* If already deinitializing then FishNet is in the process of,
+             * or has finished cleaning up this object. */
+            //callStopNetwork = (ServerManager.Objects.GetFromPending(ObjectId) == null);
             if (IsDeinitializing)
-                return;
+            {
+                /* There is however chance the object can get destroyed before deinitializing
+                 * as clientHost. If not clientHost its safe to skip deinitializing again.
+                 * But if clientHost, check if the client has deinitialized. If not then do
+                 * so now for the client side. */
+                if (IsHostStarted)
+                {
+                    if (!_onStartClientCalled)
+                        return;
+                }
+                else
+                {
+                    return;
+                }
+            }
 
             Owner?.RemoveObject(this);
             NetworkObserver?.Deinitialize(true);
@@ -349,12 +365,12 @@ namespace FishNet.Object
                 //Was destroyed without going through the proper methods.
                 if (NetworkManager.IsServerStarted)
                 {
-                    DeinitializePrediction_V2(true);
+                    Deinitialize_Prediction(true);
                     NetworkManager.ServerManager.Objects.NetworkObjectUnexpectedlyDestroyed(this, true);
                 }
                 if (NetworkManager.IsClientStarted)
                 {
-                    DeinitializePrediction_V2(false);
+                    Deinitialize_Prediction(false);
                     NetworkManager.ClientManager.Objects.NetworkObjectUnexpectedlyDestroyed(this, false);
                 }
             }
@@ -364,9 +380,9 @@ namespace FishNet.Object
              * the server or client side, so send callbacks
              * for both. */
             if (IsServerStarted)
-                InvokeStopCallbacks(true);
+                InvokeStopCallbacks(true, true);
             if (IsClientStarted)
-                InvokeStopCallbacks(false);
+                InvokeStopCallbacks(false, true);
 
             /* If owner exist then remove object from owner.
              * This has to be called here as well OnDisable because
@@ -392,20 +408,13 @@ namespace FishNet.Object
             //Do not need to set state if being destroyed.
             //Don't need to reset sync types if object is being destroyed.
 
-            void DeinitializePrediction_V2(bool asServer)
+            void Deinitialize_Prediction(bool asServer)
             {
-#if PREDICTION_V2
+#if !PREDICTION_1
                 Prediction_Deinitialize(asServer);
 #endif
             }
         }
-
-#if PREDICTION_V2
-        private void Update()
-        {
-            Prediction_Update();
-        }
-#endif
 
         /// <summary>
         /// Initializes NetworkBehaviours if they are disabled.
@@ -532,7 +541,7 @@ namespace FishNet.Object
                 if (estimatedTickDelay < 0)
                     estimatedTickDelay = 0;
 
-#if PREDICTION_V2
+#if !PREDICTION_1
                 /* Estimate of what the first replicate would have been for this object based on
                  * spawn delay. //TODO: this may not be needed anymore. */
                 ReplicateTick.Update(TimeManager, lastPacketTick - (uint)estimatedTickDelay);
@@ -556,12 +565,19 @@ namespace FishNet.Object
             }
             _networkObserverInitiliazed = true;
 
-#if PREDICTION_V2
+#if !PREDICTION_1
             Prediction_Preinitialize(networkManager, asServer);
 #endif
             //Add to connections objects. Collection is a hashset so this can be called twice for clientHost.
             owner?.AddObject(this);
         }
+
+#if !PREDICTION_1
+        private void Update()
+        {
+            Prediction_Update();
+        }
+#endif
 
         /// <summary>
         /// Sets this NetworkObject as a child of another at runtime.
@@ -741,7 +757,7 @@ namespace FishNet.Object
                 else
                     SerializedRootNetworkBehaviour = parentNob.NetworkBehaviours[0];
             }
-             
+
             //Transforms which can be searched for networkbehaviours.
             List<Transform> transformCache = CollectionCaches<Transform>.RetrieveList();
             NestedRootNetworkBehaviours.Clear();
@@ -817,7 +833,7 @@ namespace FishNet.Object
         internal void Initialize(bool asServer, bool invokeSyncTypeCallbacks)
         {
             SetInitializedStatus(true, asServer);
-            InitializeCallbacks(asServer, invokeSyncTypeCallbacks);
+            InvokeStartCallbacks(asServer, invokeSyncTypeCallbacks);
         }
 
         /// <summary>
@@ -825,10 +841,10 @@ namespace FishNet.Object
         /// </summary>
         internal void Deinitialize(bool asServer)
         {
-#if PREDICTION_V2
+#if !PREDICTION_1
             Prediction_Deinitialize(asServer);
 #endif
-            InvokeStopCallbacks(asServer);
+            InvokeStopCallbacks(asServer, true);
             for (int i = 0; i < NetworkBehaviours.Length; i++)
                 NetworkBehaviours[i].Deinitialize(asServer);
 
@@ -860,11 +876,11 @@ namespace FishNet.Object
         /// Resets the state of this NetworkObject.
         /// This is used internally and typically with custom object pooling.
         /// </summary>
-        public void ResetState()
+        public void ResetState(bool asServer)
         {
             int count = NetworkBehaviours.Length;
             for (int i = 0; i < count; i++)
-                NetworkBehaviours[i].ResetState();
+                NetworkBehaviours[i].ResetState(asServer);
 
             State = NetworkObjectState.Unset;
             SetOwner(NetworkManager.EmptyConnection);
@@ -945,7 +961,7 @@ namespace FishNet.Object
             }
 
             //After changing owners invoke callbacks.
-            InvokeOwnership(prevOwner, asServer);
+            InvokeOwnershipChange(prevOwner, asServer);
 
             //If asServer send updates to clients as needed.
             if (asServer)
@@ -1025,35 +1041,35 @@ namespace FishNet.Object
         /// Returns if this NetworkObject is a scene object, and has changed.
         /// </summary>
         /// <returns></returns>
-        internal ChangedTransformProperties GetTransformChanges(TransformProperties stp)
+        internal TransformPropertiesFlag GetTransformChanges(TransformProperties stp)
         {
-            ChangedTransformProperties ctp = ChangedTransformProperties.Unset;
+            TransformPropertiesFlag tpf = TransformPropertiesFlag.Unset;
             if (transform.localPosition != stp.Position)
-                ctp |= ChangedTransformProperties.LocalPosition;
+                tpf |= TransformPropertiesFlag.Position;
             if (transform.localRotation != stp.Rotation)
-                ctp |= ChangedTransformProperties.LocalRotation;
+                tpf |= TransformPropertiesFlag.Rotation;
             if (transform.localScale != stp.LocalScale)
-                ctp |= ChangedTransformProperties.LocalScale;
+                tpf |= TransformPropertiesFlag.LocalScale;
 
-            return ctp;
+            return tpf;
         }
 
         /// <summary>
         /// Returns if this NetworkObject is a scene object, and has changed.
         /// </summary>
         /// <returns></returns>
-        internal ChangedTransformProperties GetTransformChanges(GameObject prefab)
+        internal TransformPropertiesFlag GetTransformChanges(GameObject prefab)
         {
             Transform t = prefab.transform;
-            ChangedTransformProperties ctp = ChangedTransformProperties.Unset;
+            TransformPropertiesFlag tpf = TransformPropertiesFlag.Unset;
             if (transform.position != t.position)
-                ctp |= ChangedTransformProperties.LocalPosition;
+                tpf |= TransformPropertiesFlag.Position;
             if (transform.rotation != t.rotation)
-                ctp |= ChangedTransformProperties.LocalRotation;
+                tpf |= TransformPropertiesFlag.Rotation;
             if (transform.localScale != t.localScale)
-                ctp |= ChangedTransformProperties.LocalScale;
+                tpf |= TransformPropertiesFlag.LocalScale;
 
-            return ctp;
+            return tpf;
         }
 
         #region Editor.

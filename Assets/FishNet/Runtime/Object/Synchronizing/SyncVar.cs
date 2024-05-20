@@ -99,6 +99,10 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         [SerializeField]
         private T _value;
+        /// <summary>
+        /// True if T IsValueType.
+        /// </summary>
+        private bool _isValueType;
         #endregion
 
         #region Constructors.
@@ -112,6 +116,7 @@ namespace FishNet.Object.Synchronizing
         protected override void Initialized()
         {
             base.Initialized();
+            _isValueType = typeof(T).IsValueType;
             _initialValue = _value;
         }
 
@@ -141,18 +146,15 @@ namespace FishNet.Object.Synchronizing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void SetValue(T nextValue, bool calledByUser, bool sendRpc = false)
         {
-            /* If not registered then that means Awake
-             * has not completed on the owning class. This would be true
-             * when setting values within awake on the owning class. Registered
-             * is called at the end of awake, so it would be unset until awake completed.
-             * 
-             * Registered however will be true when setting from another script,
-             * even if the owning class of this was just spawned. This is because
-             * the unity cycle will fire awake on the object soon as it's spawned, 
-             * completing awake, and the user would set the value after. */
+            /* IsInitialized is only set after the script containing this SyncVar
+             * has executed our codegen in the beginning of awake, and after awake
+             * user logic. When not set update the initial values */
             if (!base.IsInitialized)
+            {
+                SetInitialValues(nextValue);
                 return;
-
+            }
+            
             /* If not client or server then set skipChecks
              * as true. When neither is true it's likely user is changing
              * value before object is initialized. This is allowed
@@ -298,8 +300,17 @@ namespace FishNet.Object.Synchronizing
         [MakePublic]
         internal protected override void WriteFull(PooledWriter obj0)
         {
-            if (Comparers.EqualityCompare<T>(_initialValue, _value))
-                return;
+            /* If a class then skip comparer check.
+             * InitialValue and Value will be the same reference.
+             * 
+             * If a struct then compare field changes, since the references
+             * will not be the same. Otherwise comparer normally. */
+            //Compare if a value type.
+            if (_isValueType)
+            {
+                if (Comparers.EqualityCompare<T>(_initialValue, _value))
+                    return;
+            }
             /* SyncVars only hold latest value, so just
              * write current delta. */
             WriteDelta(obj0, false);
@@ -318,9 +329,9 @@ namespace FishNet.Object.Synchronizing
         /// Resets to initialized values.
         /// </summary>
         [MakePublic]
-        internal protected override void ResetState()
+        internal protected override void ResetState(bool asServer)
         {
-            base.ResetState();
+            base.ResetState(asServer);
             _value = _initialValue;
             _previousClientValue = _initialValue;
         }

@@ -8,30 +8,21 @@ using FishNet.Serializing.Helping;
 using FishNet.Transporting;
 using FishNet.Utility;
 using FishNet.Utility.Performance;
+using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using System.Reflection;
 
 [assembly: InternalsVisibleTo(UtilityConstants.GENERATED_ASSEMBLY_NAME)]
 namespace FishNet.Serializing
 {
 
     /// <summary>
-    /// Used for write references to generic types.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    [APIExclude]
-    public static class GenericWriter<T>
-    {
-        public static Action<Writer, T> Write { get; set; }
-        public static Action<Writer, T, AutoPackType> WriteAutoPack { get; set; }
-    }
-
-    /// <summary>
     /// Writes data to a buffer.
     /// </summary>
-    public class Writer
+    public partial class Writer
     {
         #region Public.
         /// <summary>
@@ -203,7 +194,7 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void WritePacketId(PacketId pid)
         {
-            WriteUInt16((ushort)pid);
+            WriteUInt16((ushort)pid, AutoPackType.Unpacked);
         }
 
         /// <summary>
@@ -323,12 +314,22 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteUInt16(ushort value)
+        public void WriteUInt16(ushort value, AutoPackType packType = AutoPackType.Packed)
         {
-            EnsureBufferLength(2);
-            _buffer[Position++] = (byte)value;
-            _buffer[Position++] = (byte)(value >> 8);
-            Length = Math.Max(Length, Position);
+            //todo Packing for this type appears to be broken. Fix then remove this line.
+            packType = AutoPackType.Unpacked;
+
+            if (packType == AutoPackType.Unpacked)
+            {
+                EnsureBufferLength(2);
+                _buffer[Position++] = (byte)value;
+                _buffer[Position++] = (byte)(value >> 8);
+                Length = Math.Max(Length, Position);
+            }
+            else
+            {
+                WritePackedWhole(value);
+            }
         }
 
         /// <summary>
@@ -336,13 +337,7 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name="value"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteInt16(short value)
-        {
-            EnsureBufferLength(2);
-            _buffer[Position++] = (byte)value;
-            _buffer[Position++] = (byte)(value >> 8);
-            Length = Math.Max(Length, Position);
-        }
+        public void WriteInt16(short value, AutoPackType packType = AutoPackType.Packed) => WriteUInt16((ushort)value, packType);
 
         /// <summary>
         /// Writes a int32.
@@ -513,11 +508,8 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteVector2(Vector2 value)
         {
-            UIntFloat converter;
-            converter = new UIntFloat { FloatValue = value.x };
-            WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
-            converter = new UIntFloat { FloatValue = value.y };
-            WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
+            WriteSingle(value.x, AutoPackType.Unpacked);
+            WriteSingle(value.y, AutoPackType.Unpacked);
         }
 
         /// <summary>
@@ -527,13 +519,9 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteVector3(Vector3 value)
         {
-            UIntFloat converter;
-            converter = new UIntFloat { FloatValue = value.x };
-            WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
-            converter = new UIntFloat { FloatValue = value.y };
-            WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
-            converter = new UIntFloat { FloatValue = value.z };
-            WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
+            WriteSingle(value.x, AutoPackType.Unpacked);
+            WriteSingle(value.y, AutoPackType.Unpacked);
+            WriteSingle(value.z, AutoPackType.Unpacked);
         }
 
         /// <summary>
@@ -543,15 +531,10 @@ namespace FishNet.Serializing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteVector4(Vector4 value)
         {
-            UIntFloat converter;
-            converter = new UIntFloat { FloatValue = value.x };
-            WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
-            converter = new UIntFloat { FloatValue = value.y };
-            WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
-            converter = new UIntFloat { FloatValue = value.z };
-            WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
-            converter = new UIntFloat { FloatValue = value.w };
-            WriteUInt32(converter.UIntValue, AutoPackType.Unpacked);
+            WriteSingle(value.x, AutoPackType.Unpacked);
+            WriteSingle(value.y, AutoPackType.Unpacked);
+            WriteSingle(value.z, AutoPackType.Unpacked);
+            WriteSingle(value.w, AutoPackType.Unpacked);
         }
 
         /// <summary>
@@ -946,6 +929,15 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
+        /// Writers a LayerMask.
+        /// </summary>
+        /// <param name="value"></param>
+        public void WriteLayerMask(LayerMask value)
+        {
+            WriteInt32(value.value);
+        }
+
+        /// <summary>
         /// Writes a NetworkConnection.
         /// </summary>
         /// <param name="connection"></param>
@@ -953,7 +945,7 @@ namespace FishNet.Serializing
         public void WriteNetworkConnection(NetworkConnection connection)
         {
             int value = (connection == null) ? NetworkConnection.UNSET_CLIENTID_VALUE : connection.ClientId;
-            WriteInt16((short)value);
+            WriteNetworkConnectionId(value);
         }
 
         /// <summary>
@@ -962,9 +954,9 @@ namespace FishNet.Serializing
         /// <returns></returns>
         [NotSerializer]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void WriteNetworkConnectionId(short id)
+        public void WriteNetworkConnectionId(int id)
         {
-            WriteInt16(id);
+            WriteInt32(id);
         }
 
         /// <summary>
@@ -1138,7 +1130,7 @@ namespace FishNet.Serializing
                 WriteList<T>(value, offset, value.Count - offset);
         }
 
-#if !PREDICTION_V2
+#if PREDICTION_1
         /// <summary>
         /// Writes a replication to the server.
         /// </summary>
@@ -1344,12 +1336,11 @@ namespace FishNet.Serializing
 
 
         /// <summary>
-        /// Writers any supported type.
+        /// Writes any supported type.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="value"></param>
         [NotSerializer]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Write<T>(T value)
         {
             System.Type type = typeof(T);
@@ -1372,6 +1363,25 @@ namespace FishNet.Serializing
 
             string GetLogMessage() => $"Write method not found for {type.FullName}. Use a supported type or create a custom serializer.";
         }
+
+        /// <summary>
+        /// Writes any supported type assuming there is no AutoPackType.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value"></param>
+        [NotSerializer]
+        [MakePublic]
+        internal void WriteUnpacked<T>(T value)
+        {
+            Action<Writer, T> del = GenericWriter<T>.Write;
+            if (del == null)
+                NetworkManager.LogError(GetLogMessage());
+            else
+                del.Invoke(this, value);
+
+            string GetLogMessage() => $"Write method not found for {typeof(T).FullName}. Use a supported type or create a custom serializer.";
+        }
+
 
         /// <summary>
         /// Returns if T takes AutoPackType argument.

@@ -294,6 +294,7 @@ MonoBehaviour:
   _predictionType: 0
   _graphicalObject: {fileID: 0}
   _enableStateForwarding: 1
+  _networkTransform: {fileID: 0}
   _ownerInterpolation: 1
   _enableTeleport: 0
   _teleportThreshold: 1
@@ -436,6 +437,7 @@ MonoBehaviour:
   - 90
   - 100
   _updateHostVisibility: 1
+  _maximumTimedObserversDuration: 10
   _defaultConditions:
   - {fileID: 11400000, guid: cc503f7541ebd424c94541e6a767efee, type: 2}
 --- !u!114 &1424052073952814568
@@ -796,7 +798,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d3606bfdac5a4743890fc1a5ecd8f24, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _autoStartType: 1
+  _autoStartType: 0
   _stoppedColor: {r: 0.25490198, g: 0.25490198, b: 0.25490198, a: 1}
   _changingColor: {r: 0.78431374, g: 0.6862745, b: 0, a: 1}
   _startedColor: {r: 0, g: 0.5882353, b: 0.64705884, a: 1}
@@ -861,6 +863,7 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
   m_AdditionalShaderChannelsFlag: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
@@ -1009,7 +1012,7 @@ MonoBehaviour:
   _objectPool: {fileID: 0}
   _persistence: 0
   _logging: {fileID: 0}
-  _spawnablePrefabs: {fileID: 11400000, guid: 2863463f6933f3f439a639f883f642f6, type: 2}
+  _spawnablePrefabs: {fileID: 11400000, guid: 68e79e63a16f2c74e81f070bd36822b8, type: 2}
 --- !u!1 &7443408886575219563
 GameObject:
   m_ObjectHideFlags: 0
@@ -1026,6 +1029,7 @@ GameObject:
   - component: {fileID: 7443408886575219564}
   - component: {fileID: 1776591436}
   - component: {fileID: 7443408886575219566}
+  - component: {fileID: 7443408886575219567}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -1079,6 +1083,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _gridAxes: 0
   _accuracy: 10
+--- !u!114 &7443408886575219567
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7443408886575219563}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f48f002b825cbd45a19bd96d90f9edb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _dontRoute: 0
+  _unreliableMtu: 1023
+  _ipv4BindAddress: 
+  _enableIpv6: 1
+  _ipv6BindAddress: 
+  _port: 7112
+  _maximumClients: 4095
+  _clientAddress: localhost
 --- !u!224 &9139860295505404435
 RectTransform:
   m_ObjectHideFlags: 0

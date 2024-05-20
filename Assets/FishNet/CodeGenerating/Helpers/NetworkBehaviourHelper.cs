@@ -22,24 +22,26 @@ namespace FishNet.CodeGenerating.Helping
         //Names.
         internal string FullName;
         //Prediction.
+
+#if PREDICTION_1
         public string ClearReplicateCache_MethodName = nameof(NetworkBehaviour.ClearReplicateCache_Virtual);
-#if PREDICTION_V2
+#else
         public string Reconcile_Client_Start_MethodName = nameof(NetworkBehaviour.Reconcile_Client_Start);
         public string Replicate_Replay_Start_MethodName = nameof(NetworkBehaviour.Replicate_Replay_Start);
         public MethodReference Replicate_NonAuthoritative_MethodRef;
         public MethodReference Replicate_Authortative_MethodRef;
 #endif
-#if !PREDICTION_V2
+#if PREDICTION_1
         public MethodReference Replicate_Owner_MethodRef;
         public MethodReference Replicate_NonOwner_MethodRef;
 #endif
         public MethodReference Replicate_Reader_MethodRef;
-#if !PREDICTION_V2
+#if PREDICTION_1
         public MethodReference Replicate_ExitEarly_A_MethodRef;
         public MethodReference Reconcile_ExitEarly_A_MethodRef;
 #endif
         public MethodReference Reconcile_Server_MethodRef;
-        public FieldReference UsesPrediction_FieldRef;
+        //public FieldReference UsesPrediction_FieldRef;
         public MethodReference Replicate_Replay_Start_MethodRef;
         public MethodReference Reconcile_Client_MethodRef;
         public MethodReference Replicate_Replay_MethodRef;
@@ -126,7 +128,7 @@ namespace FishNet.CodeGenerating.Helping
                     Reconcile_Server_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Client))
                     Reconcile_Client_MethodRef = base.ImportReference(mi);
-                //#if PREDICTION_V2
+                //#if !PREDICTION_1
                 //                else if (mi.Name == nameof(NetworkBehaviour.Replicate_Server_SendToSpectators_Internal))
                 //                    Replicate_Server_SendToSpectators_MethodRef = base.ImportReference(mi);
                 //#endif
@@ -138,7 +140,7 @@ namespace FishNet.CodeGenerating.Helping
                 else if (mi.Name == nameof(NetworkBehaviour.NetworkInitializeIfDisabled))
                     NetworkInitializeIfDisabled_MethodRef = base.ImportReference(mi);
                 //Prediction
-#if !PREDICTION_V2
+#if PREDICTION_1
                 else if (mi.Name == nameof(NetworkBehaviour.Replicate_ExitEarly_A))
                     Replicate_ExitEarly_A_MethodRef = base.ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Reconcile_ExitEarly_A))
@@ -182,16 +184,16 @@ namespace FishNet.CodeGenerating.Helping
                     TimeManager_MethodRef = base.ImportReference(pi.GetMethod);
             }
 
-#if PREDICTION_V2
-            foreach (FieldInfo fi in networkBehaviourType.GetFields((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
-            {
-                if (fi.Name == nameof(NetworkBehaviour.UsesPrediction))
-                {
-                    UsesPrediction_FieldRef = base.ImportReference(fi);
-                    break;
-                }
-            }
-#endif
+//#if !PREDICTION_1
+//            foreach (FieldInfo fi in networkBehaviourType.GetFields((BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic)))
+//            {
+//                if (fi.Name == nameof(NetworkBehaviour.UsesPrediction))
+//                {
+//                    UsesPrediction_FieldRef = base.ImportReference(fi);
+//                    break;
+//                }
+//            }
+//#endif
 
             return true;
         }

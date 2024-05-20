@@ -1,4 +1,5 @@
-﻿using FishNet.Component.ColliderRollback;
+﻿using FishNet.CodeAnalysis.Annotations;
+using FishNet.Component.ColliderRollback;
 using FishNet.Connection;
 using FishNet.Managing;
 using FishNet.Managing.Client;
@@ -87,10 +88,20 @@ namespace FishNet.Object
         /// True if client nor server are started.
         /// </summary>
         public bool IsOffline => (!IsClientStarted && !IsServerStarted);
+#if !PREDICTION_1
+        /// <summary>
+        /// True if a reconcile is occuring on the PredictionManager. Note the difference between this and IsBehaviourReconciling.
+        /// </summary>
+        public bool IsManagerReconciling => PredictionManager.IsReconciling;
+#endif
         /// <summary>
         /// True if the local client is the owner of this object.
         /// This will only return true if IsClientInitialized is also true. You may check ownership status regardless of client initialized state by using Owner.IsLocalClient.
         /// </summary>
+        [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "OnStartServer", "")]
+        [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "OnStartNetwork", " Use base.Owner.IsLocalClient instead.")]
+        [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Awake", "")]
+        [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Start", "")]
         public bool IsOwner
         {
             get
@@ -124,7 +135,14 @@ namespace FishNet.Object
                 return Owner.IsLocalClient;
             }
         }
-
+        /// <summary>
+        /// True if IsOwner, or if IsServerInitialized with no Owner.
+        /// </summary>
+        [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "OnStartServer", "")]
+        [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "OnStartNetwork", " Use (base.Owner.IsLocalClient || (base.IsServerInitialized && !Owner.Isvalid) instead.")]
+        [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Awake", "")]
+        [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Start", "")]
+        public bool IsOwnerOrServer => (IsOwner || (IsServerInitialized && !Owner.IsValid));
         /// <summary>
         /// 
         /// </summary>

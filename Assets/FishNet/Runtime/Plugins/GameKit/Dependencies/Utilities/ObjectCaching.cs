@@ -1,3 +1,4 @@
+using GameKit.Dependencies.Utilities.Types;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -150,6 +151,21 @@ namespace GameKit.Dependencies.Utilities
     public static class ResettableCollectionCaches<T> where T : IResettable
     {
         /// <summary>
+        /// Cache for ResettableRingBuffer.
+        /// </summary>
+        private readonly static Stack<ResettableRingBuffer<T>> _resettableRingBufferCache = new Stack<ResettableRingBuffer<T>>();
+
+        /// <summary>
+        /// Retrieves a collection.
+        /// </summary>
+        public static ResettableRingBuffer<T> RetrieveRingBuffer()
+        {
+            if (_resettableRingBufferCache.Count == 0)
+                return new ResettableRingBuffer<T>();
+            else
+                return _resettableRingBufferCache.Pop();
+        }
+        /// <summary>
         /// Retrieves a collection.
         /// </summary>
         /// <returns></returns>
@@ -165,6 +181,32 @@ namespace GameKit.Dependencies.Utilities
         /// <returns></returns>
         public static HashSet<T> RetrieveHashSet() => CollectionCaches<T>.RetrieveHashSet();
 
+
+        /// <summary>
+        /// Stores a collection and sets the original reference to default.
+        /// Method will not execute if value is null.
+        /// </summary>
+        /// <param name="value">Value to store.</param>
+        /// <param name="count">Number of entries in the array from the beginning.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void StoreAndDefault(ref ResettableRingBuffer<T> value)
+        {
+            if (value == null)
+                return;
+            Store(value);
+            value = default;
+        }
+        /// <summary>
+        /// Stores a collection.
+        /// </summary>
+        /// <param name="value">Value to store.</param>
+        /// <param name="count">Number of entries in the array from the beginning.</param>
+        public static void Store(ResettableRingBuffer<T> value)
+        {
+            value.ResetState();
+            _resettableRingBufferCache.Push(value);
+        }
+        
         /// <summary>
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
@@ -357,6 +399,10 @@ namespace GameKit.Dependencies.Utilities
         /// </summary>
         private readonly static Stack<Queue<T>> _queueCache = new Stack<Queue<T>>();
         /// <summary>
+        /// Cache for queues.
+        /// </summary>
+        private readonly static Stack<BasicQueue<T>> _basicQueueCache = new Stack<BasicQueue<T>>();
+        /// <summary>
         /// Cache for hashset.
         /// </summary>
         private readonly static Stack<HashSet<T>> _hashsetCache = new Stack<HashSet<T>>();
@@ -393,6 +439,17 @@ namespace GameKit.Dependencies.Utilities
                 return new Queue<T>();
             else
                 return _queueCache.Pop();
+        }
+        /// <summary>
+        /// Retrieves a collection.
+        /// </summary>
+        /// <returns></returns>
+        public static BasicQueue<T> RetrieveBasicQueue()
+        {
+            if (_basicQueueCache.Count == 0)
+                return new BasicQueue<T>();
+            else
+                return _basicQueueCache.Pop();
         }
         /// <summary>
         /// Retrieves a collection adding one entry.
@@ -453,11 +510,11 @@ namespace GameKit.Dependencies.Utilities
         }
 
         /// <summary>
-        /// Stores a collection and sets the original reference to default.\
+        /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
         /// </summary>
         /// <param name="value">Value to store.</param>
-        /// <param name="count">Number of entries in the array from the beginning.</param>
+        /// <param name="count">Number of entries in the array set default, from the beginning.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAndDefault(ref T[] value, int count)
         {
@@ -525,6 +582,28 @@ namespace GameKit.Dependencies.Utilities
             _queueCache.Push(value);
         }
 
+        /// <summary>
+        /// Stores a collection and sets the original reference to default.
+        /// Method will not execute if value is null.
+        /// </summary>
+        /// <param name="value">Value to store.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void StoreAndDefault(ref BasicQueue<T> value)
+        {
+            if (value == null)
+                return;
+            Store(value);
+            value = default;
+        }
+        /// <summary>
+        /// Stores a collection.
+        /// </summary>
+        /// <param name="value">Value to store.</param>
+        public static void Store(BasicQueue<T> value)
+        {
+            value.Clear();
+            _basicQueueCache.Push(value);
+        }
         /// <summary>
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.

@@ -1,6 +1,10 @@
-﻿using FishNet.Managing;
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#define DEVELOPMENT
+#endif
+using FishNet.Managing;
 using FishNet.Managing.Predicting;
 using FishNet.Managing.Timing;
+using FishNet.Managing.Transporting;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using System.Collections.Generic;
@@ -17,7 +21,7 @@ namespace FishNet.Connection
     {
         internal void Prediction_Initialize(NetworkManager manager, bool asServer) { }
 
-#if !PREDICTION_V2
+#if PREDICTION_1
         /// <summary>
         /// Local tick when the connection last replicated.
         /// </summary>
@@ -45,30 +49,45 @@ namespace FishNet.Connection
         /// <param name="data"></param>
         internal void WriteState(PooledWriter data)
         {
-#if !DEVELOPMENT_BUILD && !UNITY_EDITOR
+#if !DEVELOPMENT
             //Do not send states to clientHost.
             if (IsLocalClient)
                 return;
 #endif
 
-            TimeManager tm = NetworkManager.TimeManager;
-            uint ticksBehind = (IsLocalClient) ? 0 : PacketTick.LocalTickDifference(tm);
+            TimeManager timeManager = NetworkManager.TimeManager;
+            TransportManager transportManager = NetworkManager.TransportManager;
+            uint ticksBehind = (IsLocalClient) ? 0 : PacketTick.LocalTickDifference(timeManager);
             /* If it's been a really long while the client could just be setting up
              * or dropping. Only send if they've communicated within 5 seconds. */
-            if (ticksBehind > (tm.TickRate * 5))
+            if (ticksBehind > (timeManager.TickRate * 5))
                 return;
 
-            int mtu = NetworkManager.TransportManager.GetLowestMTU((byte)Channel.Unreliable);
+            int mtu = transportManager.GetLowestMTU((byte)Channel.Unreliable);
             PooledWriter stateWriter;
             int writerCount = PredictionStateWriters.Count;
             /* Conditions to create a new writer are:
              * - writer does not exist yet.
              * - data length + currentWriter length > mtu */
-            if (writerCount == 0 || (data.Length + PredictionStateWriters[writerCount-1].Length) > mtu)
+            Channel channel = Channel.Unreliable;
+            if (writerCount > 0)
+                transportManager.CheckSetReliableChannel((data.Length + PredictionStateWriters[writerCount - 1].Length), ref channel);
+            /* If no writers or if channel would be forced reliable.
+             * 
+             * By checking if channel would be reliable this is
+             * essentially asking if (current written + new data) would
+             * exceed mtu. When it would get a new writer to try
+             * and favor unreliable. Emphasis on try, because if some
+             * really unlikely chance the data was really large it would
+             * still send on reliable down the line. */
+            if (writerCount == 0 || channel == Channel.Reliable)
             {
                 stateWriter = WriterPool.Retrieve(mtu);
-                PredictionStateWriters.Add(stateWriter);
-                stateWriter.Reserve(PredictionManager.STATE_HEADER_RESERVE_COUNT);
+                PredictionStateWriters.Add(stateWriter);               
+                stateWriter.Reserve(PredictionManager.STATE_HEADER_RESERVE_LENGTH);
+                /// 2 PacketId.
+                /// 4 Last replicate tick run for connection.
+                /// 4 Length unpacked.
             }
             else
             {

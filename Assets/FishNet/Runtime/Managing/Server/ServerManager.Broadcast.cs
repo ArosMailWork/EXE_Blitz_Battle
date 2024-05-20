@@ -42,7 +42,7 @@ namespace FishNet.Managing.Server
                 return;
             }
 
-            ushort key = BroadcastHelper.GetKey<T>();
+            ushort key = BroadcastExtensions.GetKey<T>();
             //Create new IBroadcastHandler if needed.
             BroadcastHandlerBase bhs;
             if (!_broadcastHandlers.TryGetValueIL2CPP(key, out bhs))
@@ -61,7 +61,7 @@ namespace FishNet.Managing.Server
         /// <param name="handler">Method to unregister.</param>
         public void UnregisterBroadcast<T>(Action<NetworkConnection, T, Channel> handler) where T : struct, IBroadcast
         {
-            ushort key = BroadcastHelper.GetKey<T>();
+            ushort key = BroadcastExtensions.GetKey<T>();
             if (_broadcastHandlers.TryGetValueIL2CPP(key, out BroadcastHandlerBase bhs))
                 bhs.UnregisterHandler(handler);
         }
@@ -79,7 +79,7 @@ namespace FishNet.Managing.Server
             // try to invoke the handler for that message
             if (_broadcastHandlers.TryGetValueIL2CPP(key, out BroadcastHandlerBase bhs))
             {
-                if (bhs.RequireAuthentication && !conn.Authenticated)
+                if (bhs.RequireAuthentication && !conn.IsAuthenticated)
                     conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"ConnectionId {conn.ClientId} sent a broadcast which requires authentication, but client was not authenticated. Client has been disconnected.");
                 else
                     bhs.InvokeHandlers(conn, reader, channel);
@@ -105,14 +105,14 @@ namespace FishNet.Managing.Server
                 NetworkManager.LogWarning($"Cannot send broadcast to client because server is not active.");
                 return;
             }
-            if (requireAuthenticated && !connection.Authenticated)
+            if (requireAuthenticated && !connection.IsAuthenticated)
             {
                 NetworkManager.LogWarning($"Cannot send broadcast to client because they are not authenticated.");
                 return;
             }
 
             PooledWriter writer = WriterPool.Retrieve();
-            Broadcasts.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
+            BroadcastsSerializers.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
             ArraySegment<byte> segment = writer.GetArraySegment();
             NetworkManager.TransportManager.SendToClient((byte)channel, segment, connection);
             writer.Store();
@@ -137,12 +137,12 @@ namespace FishNet.Managing.Server
 
             bool failedAuthentication = false;
             PooledWriter writer = WriterPool.Retrieve();
-            Broadcasts.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
+            BroadcastsSerializers.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
             ArraySegment<byte> segment = writer.GetArraySegment();
 
             foreach (NetworkConnection conn in connections)
             {
-                if (requireAuthenticated && !conn.Authenticated)
+                if (requireAuthenticated && !conn.IsAuthenticated)
                     failedAuthentication = true;
                 else
                     NetworkManager.TransportManager.SendToClient((byte)channel, segment, conn);
@@ -326,13 +326,13 @@ namespace FishNet.Managing.Server
 
             bool failedAuthentication = false;
             PooledWriter writer = WriterPool.Retrieve();
-            Broadcasts.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
+            BroadcastsSerializers.WriteBroadcast<T>(NetworkManager, writer, message, ref channel);
             ArraySegment<byte> segment = writer.GetArraySegment();
 
             foreach (NetworkConnection conn in Clients.Values)
             {
                 //
-                if (requireAuthenticated && !conn.Authenticated)
+                if (requireAuthenticated && !conn.IsAuthenticated)
                     failedAuthentication = true;
                 else
                     NetworkManager.TransportManager.SendToClient((byte)channel, segment, conn);
