@@ -6,67 +6,69 @@ public class SpawnerScript : MonoBehaviour
 {
     [SerializeField]
     List<GameObject> prefabs;
+
     [SerializeField]
-    float xPosition, yPosition;
-    float time = 0, screenWidth, screenHeight;
-    ObjectScript script;
+    GameObject VerticalBorder1, HorizontalBorder1, VerticalBorder2, HorizontalBorder2;
+
     [SerializeField]
-    int poolSize = 10;
+    float spawnInterval = 2f, elapsedTime = 0f;
+
     List<GameObject> Objects;
 
     void Start()
     {
-        screenWidth = Camera.main.orthographicSize * Camera.main.aspect;
-        screenHeight = Camera.main.orthographicSize * 2;
         Objects = new List<GameObject>();
-        for (int i = 0; i < poolSize; i++)
+
+        foreach (GameObject obj in prefabs)
         {
-            int prefabIndex = i % prefabs.Count;
-            GameObject gameObject = Instantiate(prefabs[prefabIndex]);
+            GameObject gameObject = Instantiate(obj);
             gameObject.SetActive(false);
             Objects.Add(gameObject);
         }
+
+        InvokeRepeating(nameof(SpawnObject), elapsedTime, spawnInterval);
     }
 
     // Update is called once per frame
     void Update()
     {
-        SpawnObject(new Vector3(), 0);
+
     }
 
-    void SpawnObject(Vector3 spawnPos, int index)
+    void SpawnObject()
     {
-        if (index < 0 || index >= prefabs.Count)
+        int index = Random.Range(0, prefabs.Count);
+        Vector3 spawnPos = GetRandomSpawnPosition();
+
+        if (index >= 0 && index < Objects.Count)
+        {
+            GameObject obj = Objects[index];
+            if (obj != null)
+            {
+                obj.SetActive(true);
+                obj.transform.position = spawnPos;
+            }
+            else
+            {
+                Debug.LogError("Spawned object is null");
+            }
+        }
+        else
         {
             Debug.LogError("Index out of range");
-            return;
-        }
-
-        time += Time.deltaTime;
-        if (time >= 2)
-        {
-            GameObject gameObject = GetFreeGameObject();
-            if (gameObject != null)
-            {
-                xPosition = Random.Range(0, 2) == 0 ? (screenWidth - 20) : -(screenWidth - 20);
-                yPosition = Random.Range(-screenHeight, screenHeight);
-                spawnPos = new Vector3(xPosition, yPosition);
-                gameObject.transform.position = spawnPos;
-                //script = gameObject.GetComponent<ObjectScript>();
-                time = 0;
-            }
         }
     }
-    private GameObject GetFreeGameObject()
+
+    private Vector3 GetRandomSpawnPosition()
     {
-        foreach (GameObject gameObject in Objects)
-        {
-            if (gameObject.activeSelf == false)
-            {
-                gameObject.SetActive(true);
-                return gameObject;
-            }
-        }
-        return null;
+        float minX = HorizontalBorder1.transform.position.x - HorizontalBorder1.transform.localScale.x / 2;
+        float maxX = HorizontalBorder2.transform.position.x + HorizontalBorder2.transform.localScale.x / 2;
+        float minY = VerticalBorder1.transform.position.y - VerticalBorder1.transform.localScale.y / 2;
+        float maxY = VerticalBorder2.transform.position.y + VerticalBorder2.transform.localScale.y / 2;
+
+        float lerpX = Mathf.Lerp(minX, maxX, Random.value);
+        float lerpY = Mathf.Lerp(minY, maxY, Random.value);
+
+        return new Vector3(lerpX, lerpY, 0f);
     }
 }
