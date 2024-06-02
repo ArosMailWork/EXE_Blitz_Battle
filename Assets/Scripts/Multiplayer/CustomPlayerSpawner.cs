@@ -1,20 +1,25 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using FishNet;
+using FishNet.Broadcast;
 using FishNet.Connection;
 using FishNet.Managing;
 using FishNet.Managing.Scened;
 using FishNet.Object;
 using FishNet.Transporting;
+using Sirenix.OdinInspector;
 using UnityEngine;
+using WebSocketSharp;
 
-public class CustomPlayerSpawner : MonoBehaviour
+public class CustomPlayerSpawner : NetworkBehaviour
 {
     public bool _Toggle;
     private int _nextSpawn;
     private NetworkManager _networkManager;
     public event Action<NetworkObject> OnSpawned;
+    public List<NetworkConnection> connList;
     
     [Tooltip("Prefab to spawn for the player.")]
     [SerializeField]
@@ -25,77 +30,58 @@ public class CustomPlayerSpawner : MonoBehaviour
     public Transform[] spawnPoints;
     public string sceneName;
     public bool _addToDefaultScene;
+    public static CustomPlayerSpawner Instance;
 
     private void Awake()
     {
         _networkManager = InstanceFinder.NetworkManager;
-        
-        // Add this event in order to load the scene
-        _networkManager.ServerManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
+        if(_networkManager == null) return;
 
-        // Add this event so we can spawn the player
-        _networkManager.SceneManager.OnClientLoadedStartScenes += SceneManager_OnClientLoadedStartScenes;
+        // Add this event so we can spawn when at scene have update in connection 
+        _networkManager.SceneManager.OnClientPresenceChangeEnd += SceneManager_OnClientPresenceChangeEnd;
     }
 
+    private void OnEnable()
+    {
+        Instance = this;
+        
+        InstanceFinder.ClientManager.RegisterBroadcast<Data>(OnSpawnBroadcast);
+        InstanceFinder.ServerManager.RegisterBroadcast<Data>(OnClientSpawnBroadcast);
+    }
+    private void OnDisable()
+    {
+        //InstanceFinder.ClientManager.UnregisterBroadcast<Data>(OnSpawnBroadcast);
+        //InstanceFinder.ServerManager.UnregisterBroadcast<Data>(OnClientSpawnBroadcast);
+    }
+    
+    private void Start()
+    {
+        connList = _networkManager.ClientManager.Clients.Values.ToList();
+    }
+
+    private NetworkConnection spawnConn;
+    void SceneManager_OnClientPresenceChangeEnd(ClientPresenceChangeEventArgs changeEvent)
+    {
+        spawnConn = changeEvent.Connection;
+        //Debug.Log("this go second: " + spawnConn);
+        ClientEndBroadcastSpawn(spawnConn);
+    }
+
+    #region Spawn
     
     public void FindSpawns()
     {
-        GameObject[] spawners = GameObject.FindGameObjectsWithTag(SpawnerTag);
-        spawnPoints = new Transform[spawners.Length];
-
-        for(int i=0;i<spawners.Length;i++)
+        if (!SpawnerTag.IsNullOrEmpty())
         {
-            spawnPoints[i] = spawners[i].transform;
+            GameObject[] spawners = GameObject.FindGameObjectsWithTag(SpawnerTag);
+            spawnPoints = new Transform[spawners.Length];
+
+            for(int i=0;i<spawners.Length;i++)
+            {
+                spawnPoints[i] = spawners[i].transform;
+            }
         }
     }
-
-    private void SceneManager_OnClientLoadedStartScenes(NetworkConnection conn, bool asServer)
-    {
-        Debug.Log(conn);
-        if (!asServer || !_Toggle)
-            return;
-        if (_playerPrefab == null)
-        {
-            Debug.LogWarning($"Player prefab is empty and cannot be spawned for connection {conn.ClientId}.");
-            return;
-        }
-        
-        FindSpawns();
-
-        Vector3 position;
-        Quaternion rotation;
-        SetSpawn(_playerPrefab.transform, out position, out rotation);
-
-        NetworkObject nob = _networkManager.GetPooledInstantiated(_playerPrefab, position, rotation, true);
-        _networkManager.ServerManager.Spawn(nob, conn);
-
-        //If there are no global scenes 
-        if (_addToDefaultScene)
-            _networkManager.SceneManager.AddOwnerToDefaultScene(nob);
-
-        OnSpawned?.Invoke(nob);
-    }
-    private void ServerManager_OnServerConnectionState(ServerConnectionStateArgs obj)
-    {
-        // When server starts load online scene as global. Since this is a global scene clients will automatically join it when connecting.
-        if (obj.ConnectionState == LocalConnectionState.Started)
-        {
-            Debug.Log("Server Connection state = Started");
-            
-            // Now load the global scene where the game is player. Instead of a fixed name you can also retrieve the
-            // name of the game scene from the lobby meta data, making it more dynamic
-            
-            
-            Debug.Log("Loading scene: "+sceneName);
-            SceneLoadData sld = new SceneLoadData(sceneName);
-            sld.ReplaceScenes = ReplaceOption.All;
-            
-            Debug.Log("Now load the global map");
-            _networkManager.SceneManager.LoadGlobalScenes(sld);
-        }
-    }
-    
-    
     private void SetSpawn(Transform prefab, out Vector3 pos, out Quaternion rot)
     {
         //No spawns specified.
@@ -126,4 +112,76 @@ public class CustomPlayerSpawner : MonoBehaviour
         pos = prefab.position;
         rot = prefab.rotation;
     }
+
+    public void SpawnPlayer(NetworkConnection conn, bool added)
+    {
+        doSpawnPlayer(conn, added);
+    }
+    
+    void doSpawnPlayer(NetworkConnection conn, bool added)
+    {
+        if (!_Toggle || added) return; //not added and spawner turn On only
+        //Debug.Log("Try Spawn: " + conn);
+        if (_playerPrefab == null)
+        {
+            Debug.LogWarning($"Player prefab is empty and cannot be spawned for connection {conn.ClientId}.");
+            return;
+        }
+        
+        FindSpawns();
+
+        Vector3 position;
+        Quaternion rotation;
+        SetSpawn(_playerPrefab.transform, out position, out rotation);
+        
+        //Debug.Log("Scene CPCS joined: " + conn);
+
+        //NetworkObject nob = _networkManager.GetPooledInstantiated(_playerPrefab, position, rotation, true);
+        NetworkObject nob = Instantiate(_playerPrefab, position, rotation);
+        base.Spawn(nob, conn);
+        
+        //If there are no global scenes 
+        if (_addToDefaultScene)
+            _networkManager.SceneManager.AddOwnerToDefaultScene(nob);
+        
+        CameraTracking.Instance.AddObj(nob.gameObject);
+    }
+    
+    #endregion
+
+    #region Broadcast
+    
+    public struct Data : IBroadcast
+    {
+        public NetworkConnection conn;
+        public int tIndex;
+    }
+    
+    //Send shiet
+    private void OnClientSpawnBroadcast(NetworkConnection networkConnection, Data data, Channel channel)
+    {
+        //Debug.Log("Through Client");
+        InstanceFinder.ServerManager.Broadcast(data);
+    }
+    
+    //Receive
+    private void OnSpawnBroadcast(Data data, Channel channel)
+    {
+        if(!Instance.IsServer) return;
+        //Debug.Log("Server Broadcast: " + data.conn);
+        SpawnPlayer(data.conn, false);
+    }
+
+    public void ClientEndBroadcastSpawn(NetworkConnection connInput)
+    {
+        var data = new Data() { conn = connInput };
+        //Debug.Log("Seem like it worked, nice " + data.conn + InstanceFinder.IsServer);
+        
+        if (InstanceFinder.IsServer)
+            InstanceFinder.ServerManager.Broadcast(data);
+        else if (InstanceFinder.IsClient)
+            InstanceFinder.ClientManager.Broadcast(data);
+    }
+    
+    #endregion
 }

@@ -28,45 +28,41 @@ public class SkillSlot : NetworkBehaviour
     
     [HideInInspector] public GameObject spawnedObject;
 
-    [ServerRpc] //This do and tell server do stuffs but not gonna tell other players (obj on server so it can spawn stuffs :3) 
-    public void Initialize(PlayerController setPCController)
+    //[ServerRpc] //This do and tell server only (can use for spawn)
+    public void Initialize(GameObject obj)
     {
-        Debug.Log("Spawn playerController");
-        _playerController = setPCController;
+        PlayerController setPCController = obj.GetComponent<PlayerController>();
+        ObserverSetup(setPCController);
+    }
 
+    [ObserversRpc] //Only Server can Execute this to all everyone
+    public void ObserverSetup(PlayerController setPCController)
+    {
+        _playerController = setPCController;
+    }
+
+    public void InitServer(GameObject obj, PlayerController setPCController)
+    {
+        _playerController = setPCController;
         if (Skill != null && Skill.skillType == SkillType.Weaponary)
         {
             //Spawn Prefab as a Child 
             if (SkillPrefab == null)
             {
-                Debug.Log("Spawned Prefab");
                 SkillPrefab = Instantiate(Skill.SkillPrefab, this.transform); 
                 SkillPrefab.SetParent(this);
-                //base.Spawn(SkillPrefab);
                 base.Spawn(SkillPrefab, Owner); //must have ownership for the client authen in animator
+                Debug.Log("Spawned SkillSlot Prefab: " + _playerController.LocalConnection + _playerController.IsServer);
             }
-            AssignAnimators();
+            AssignAnimators(SkillPrefab);
         } 
         
-        Setup(_playerController, SkillPrefab);
     }
     
-    [ObserversRpc] //player see this when join (tell them to take Component bla bla here)
-    public void Setup(PlayerController setPCController, NetworkObject spawnedObj)
+    [ObserversRpc]
+    public void AssignAnimators(NetworkObject sp)
     {
-        Debug.Log("Set playerController");
-        _playerController = setPCController;
-
-        if(!base.IsOwner) return;
-        if (Skill != null && Skill.skillType == SkillType.Weaponary)
-        {
-            SkillPrefab = spawnedObj;
-            AssignAnimators();
-        } 
-    }
-    public void AssignAnimators()
-    {
-        if (SkillPrefab == null && Skill.skillType == SkillType.Weaponary)
+        if (sp == null && Skill.skillType == SkillType.Weaponary)
         {
             Debug.Log("Found no prefab");
             return;
@@ -78,7 +74,7 @@ public class SkillSlot : NetworkBehaviour
             if (SkillPrefabAnimator == null)
             {
                 //Debug.Log("took 1");
-                SkillPrefabAnimator = SkillPrefab.GetComponentInChildren<Animator>();
+                SkillPrefabAnimator = sp.GetComponentInChildren<Animator>();
             }
 
             if (SkillPrefabNetworkAnimator == null)

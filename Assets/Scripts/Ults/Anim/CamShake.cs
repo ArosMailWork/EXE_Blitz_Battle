@@ -1,6 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -16,7 +13,7 @@ public class CamShake : MonoBehaviour
     [SerializeField] float traumaRotMag = 17f; //the rotational power
     [SerializeField] float traumaDepthMag = 0.6f; //the depth multiplier
     [SerializeField] float traumaDecay = 1.3f; //how quickly the shake falls off
-    [SerializeField] float extraAdd = 0f; //extra when stack
+    //[SerializeField] float extraAdd = 0f; //extra when stack
 
     float timeCounter = 0; //counter stored for smooth transition
     public static CamShake Instance { get; private set; }

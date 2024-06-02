@@ -119,7 +119,6 @@ public class PlayerController : NetworkBehaviour
     private Rigidbody rb;
     private PredictionRigidbody predictRB;
     float gravityvalue;
-    private bool isOwner;
     
     UnityEvent OnLanding;
     
@@ -146,22 +145,21 @@ public class PlayerController : NetworkBehaviour
     {
         base.OnStartClient();
         
-        CameraTracking.Instance.AddObj(this.gameObject);
-
         if (base.IsOwner)
         {
             //Debug.Log("owner");
-            isOwner = true;
         }
         else
         {
             //Debug.Log("client disable stuffs");
-            if(skillsHolder != null) skillsHolder.enabled = false;   
+            if(skillsHolder != null) skillsHolder.toggle = false;   
             
             PlayerInput otherPlayerInput = gameObject.GetComponent<PlayerInput>();
             if(otherPlayerInput != null) otherPlayerInput.enabled = false;
         }
         
+        Debug.Log("Add To CamView: " + base.LocalConnection);
+        CameraTracking.Instance.AddObj(this.gameObject);
     }
 
     public override void OnStopClient()

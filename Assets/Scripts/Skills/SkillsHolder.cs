@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using Sirenix.OdinInspector;
+using Sirenix.Utilities.Editor;
 using UnityEngine;
 
 [Serializable]
@@ -16,30 +17,65 @@ public struct SkillBind
 //Take Input then summon dae skills XD
 public class SkillsHolder : NetworkBehaviour
 {
-    [ReadOnly] public PlayerController _playerController;
+    public PlayerController _playerController;
+    public LoadoutSetter loadoutSetter;
     public int SkillAmount;
+    public bool toggle = true;
     public List<SkillBind> SkillBinds;
+
+    public static SkillsHolder Instance;
+
+    #region Network Setup
 
     public override void OnStartClient()
     {
         base.OnStartClient();
-        _playerController = GetComponentInParent<PlayerController>();
-
-        if (!base.IsOwner)
+        
+        if (!_playerController.IsOwner)
         {
-            this.enabled = false;
+            toggle = false;
             return;
         }
-        
-        foreach (var skillBind in SkillBinds)
-        {
-            if (_playerController != null) skillBind.SkillSlots.Initialize(_playerController);
-            else Debug.Log("failed: " + _playerController.gameObject.name);
-        }
 
+        Debug.Log("Skill Holder" + base.LocalConnection + " " + _playerController.IsOwner);
+        //execute load on client side Loadout then tell spawn XD
+        if(loadoutSetter != null && _playerController.IsOwner) loadoutSetter.LoadSkill(ClientLoadoutSave.Instance.pickedSkills);
+        SpawnSkillObj();
+    }
+    public override void OnStopClient()
+    {
+        base.OnStopClient();
     }
 
+    [Button]
+    [ServerRpc]
+    public void SpawnSkillObj()
+    {
+        Debug.Log("Server Spawn !!! " + _playerController.LocalConnection);
+
+        foreach (var skillBind in SkillBinds)
+        {
+            Instance = this;
+            if (_playerController != null)
+            {
+                skillBind.SkillSlots.InitServer(_playerController.gameObject, _playerController); //Spawn Test
+                skillBind.SkillSlots.ObserverSetup(_playerController); //Assign Test
+                
+                //skillBind.SkillSlots.Initialize(_playerController.gameObject);
+            }
+            else Debug.Log("cant find playerController");
+        }
+    }
+
+    #endregion
+    
+
     #region Unity Method
+
+    private void Awake()
+    {
+        _playerController = GetComponentInParent<PlayerController>();
+    }
 
     private void Start()
     {
@@ -48,6 +84,7 @@ public class SkillsHolder : NetworkBehaviour
 
     private void Update()
     {
+        if(!toggle) return;
         foreach (var skillBind in SkillBinds)
         {
             if (Input.GetKeyDown(skillBind.KeyBind)) skillBind.SkillSlots.Activate(true);

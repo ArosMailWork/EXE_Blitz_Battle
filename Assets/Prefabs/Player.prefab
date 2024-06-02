@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 4332863993774618900}
   - component: {fileID: 3680386375090636807}
   - component: {fileID: 2308954012142326245}
+  - component: {fileID: 1778744456827370245}
   m_Layer: 7
   m_Name: Skill
   m_TagString: Untagged
@@ -53,12 +54,13 @@ MonoBehaviour:
   _networkObjectCache: {fileID: 2308954012142326245}
   _playerController: {fileID: 0}
   SkillAmount: 3
+  toggle: 1
   SkillBinds:
-  - KeyBind: 323
-    SkillSlots: {fileID: 8099365016662421520}
-  - KeyBind: 324
-    SkillSlots: {fileID: 4332863993774618900}
   - KeyBind: 304
+    SkillSlots: {fileID: 8099365016662421520}
+  - KeyBind: 323
+    SkillSlots: {fileID: 4332863993774618900}
+  - KeyBind: 324
     SkillSlots: {fileID: 3680386375090636807}
 --- !u!114 &8099365016662421520
 MonoBehaviour:
@@ -152,6 +154,7 @@ MonoBehaviour:
   - {fileID: 8099365016662421520}
   - {fileID: 4332863993774618900}
   - {fileID: 3680386375090636807}
+  - {fileID: 1778744456827370245}
   <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 5091399932916439916}
   <NestedRootNetworkBehaviours>k__BackingField: []
   SerializedTransformProperties:
@@ -182,6 +185,25 @@ MonoBehaviour:
   _scenePathHash: 0
   <SceneId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 0
+--- !u!114 &1778744456827370245
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6721854704196982275}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d6eb77971bf9a3c4793f42317fc0bde6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _componentIndexCache: 4
+  _addedNetworkObject: {fileID: 2308954012142326245}
+  _networkObjectCache: {fileID: 2308954012142326245}
+  conn:
+    ClientId: -1
+  skillHolder: {fileID: 778677073652135672}
+  skillList: []
 --- !u!1 &7665365479273194569
 GameObject:
   m_ObjectHideFlags: 0
@@ -198,9 +220,9 @@ GameObject:
   - component: {fileID: 150149544111796314}
   - component: {fileID: 5091399932916439916}
   - component: {fileID: 2535395009750846303}
+  - component: {fileID: 3703437634400103566}
+  - component: {fileID: -6169061417480149864}
   - component: {fileID: 2197413202666351386}
-  - component: {fileID: 709206161101589191}
-  - component: {fileID: 7132703887439248485}
   m_Layer: 7
   m_Name: Player
   m_TagString: Player
@@ -505,12 +527,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   <IsNested>k__BackingField: 0
   <ComponentIndex>k__BackingField: 0
-  <PredictedSpawn>k__BackingField: {fileID: 0}
+  <PredictedSpawn>k__BackingField: {fileID: 3703437634400103566}
   _networkBehaviours:
   - {fileID: 5091399932916439916}
   - {fileID: 2197413202666351386}
-  - {fileID: 709206161101589191}
-  - {fileID: 7132703887439248485}
+  - {fileID: 3703437634400103566}
+  - {fileID: -6169061417480149864}
   <SerializedRootNetworkBehaviour>k__BackingField: {fileID: 0}
   <NestedRootNetworkBehaviours>k__BackingField:
   - {fileID: 2308954012142326245}
@@ -524,9 +546,9 @@ MonoBehaviour:
   _initializeOrder: 0
   _defaultDespawnType: 0
   NetworkObserver: {fileID: 0}
-  _enablePrediction: 0
-  _predictionType: 0
-  _graphicalObject: {fileID: 0}
+  _enablePrediction: 1
+  _predictionType: 1
+  _graphicalObject: {fileID: 5851899757553119135}
   _detachGraphicalObject: 0
   _enableStateForwarding: 1
   _networkTransform: {fileID: 0}
@@ -535,13 +557,45 @@ MonoBehaviour:
   _adaptiveInterpolation: 3
   _spectatorSmoothedProperties: 255
   _spectatorInterpolation: 2
-  _enableTeleport: 0
+  _enableTeleport: 1
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 8
+  <PrefabId>k__BackingField: 7
   <SpawnableCollectionId>k__BackingField: 0
   _scenePathHash: 0
   <SceneId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 7807759643866311769
+--- !u!114 &3703437634400103566
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7665365479273194569}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2b597e1828355a4d994a69cbb11ef85, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _componentIndexCache: 2
+  _addedNetworkObject: {fileID: 2535395009750846303}
+  _networkObjectCache: {fileID: 2535395009750846303}
+  _allowSpawning: 1
+  _allowDespawning: 1
+--- !u!114 &-6169061417480149864
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7665365479273194569}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 402926ef33e0a894d9fec352693988ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _componentIndexCache: 3
+  _addedNetworkObject: {fileID: 2535395009750846303}
+  _networkObjectCache: {fileID: 2535395009750846303}
 --- !u!114 &2197413202666351386
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -630,7 +684,7 @@ MonoBehaviour:
   LastMove: {x: 0, y: 0}
   radius: 0.5
   maxLengthGroundCheck: 0.92
-  skillsHolder: {fileID: 0}
+  skillsHolder: {fileID: 778677073652135672}
   groundLayer:
     serializedVersion: 2
     m_Bits: 64
@@ -638,35 +692,3 @@ MonoBehaviour:
   KBDelay: 0.05
   JumpMultiplier: 2.5
   LowJumpMultiplier: 1
---- !u!114 &709206161101589191
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7665365479273194569}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 402926ef33e0a894d9fec352693988ac, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _componentIndexCache: 2
-  _addedNetworkObject: {fileID: 2535395009750846303}
-  _networkObjectCache: {fileID: 2535395009750846303}
---- !u!114 &7132703887439248485
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7665365479273194569}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d6eb77971bf9a3c4793f42317fc0bde6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _componentIndexCache: 3
-  _addedNetworkObject: {fileID: 2535395009750846303}
-  _networkObjectCache: {fileID: 2535395009750846303}
-  skillHolder: {fileID: 0}
-  skillList: []

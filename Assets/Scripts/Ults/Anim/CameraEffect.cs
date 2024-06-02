@@ -1,9 +1,6 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
-using UnityEngine.Rendering;
 using UnityEngine.Rendering.PostProcessing;
 //using UnityEngine.Rendering.Universal;
 using UnityEngine.Serialization;
@@ -23,7 +20,7 @@ public class CameraEffect : MonoBehaviour
     [SerializeField] float LD_Amount = -0.2f;
     [SerializeField] float Fov_Amount = 8f;
 
-    private bool delayEnd = false;
+    bool delayEnd;
     
     private void Awake()
     {

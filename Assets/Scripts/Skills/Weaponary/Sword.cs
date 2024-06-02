@@ -14,7 +14,7 @@ public class Sword : ISkill
         if (skillSlot.SkillPrefabAnimator == null)
         {
             Debug.Log("Animator plz ?");
-            skillSlot.AssignAnimators();
+            //skillSlot.AssignAnimators();
             return;
         }
 

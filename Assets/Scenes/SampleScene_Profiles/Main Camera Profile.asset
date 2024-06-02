@@ -24,10 +24,10 @@ MonoBehaviour:
     value: {r: 0, g: 0, b: 0, a: 1}
   normalColor:
     overrideState: 1
-    value: {r: 1, g: 0, b: 0, a: 1}
+    value: {r: 0, g: 0, b: 0, a: 1}
   depthThreshold:
-    overrideState: 0
-    value: 1.5
+    overrideState: 1
+    value: 4
   depthNormalThreshold:
     overrideState: 0
     value: 0.5
@@ -37,6 +37,49 @@ MonoBehaviour:
   normalThreshold:
     overrideState: 1
     value: 0.4
+--- !u!114 &-430677199528229969
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01db26a016c37ad4595130fb23cb32fc, type: 3}
+  m_Name: PixelizeLinePostProcessing
+  m_EditorClassIdentifier: 
+  active: 0
+  enabled:
+    overrideState: 1
+    value: 1
+  _PixelSample:
+    overrideState: 1
+    value: 305
+  scale:
+    overrideState: 0
+    value: 1
+  color:
+    overrideState: 1
+    value: {r: 0, g: 0, b: 0, a: 1}
+  normalColor:
+    overrideState: 1
+    value: {r: 0, g: 0, b: 0, a: 1}
+  depthThreshold:
+    overrideState: 1
+    value: 35.3
+  depthNormalThreshold:
+    overrideState: 0
+    value: 0.5
+  depthNormalThresholdScale:
+    overrideState: 0
+    value: 7
+  Highlight:
+    overrideState: 0
+    value: 1
+  Type:
+    overrideState: 0
+    value: 2
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -52,6 +95,7 @@ MonoBehaviour:
   settings:
   - {fileID: 7132833575056398391}
   - {fileID: -7214898088271058785}
+  - {fileID: -430677199528229969}
 --- !u!114 &7132833575056398391
 MonoBehaviour:
   m_ObjectHideFlags: 3
