@@ -8,6 +8,7 @@ using UnityEngine;
 
 public class ConnectionStarter : MonoBehaviour
 {
+    public bool Toggle;
     [SerializeField] private ConnectionType _connectionType;
     private NetworkManager _networkManager;
     
@@ -15,6 +16,8 @@ public class ConnectionStarter : MonoBehaviour
     
     private void Awake()
     {
+        if(!Toggle) return;
+        
         _networkManager = InstanceFinder.NetworkManager;
         if (TryGetComponent(out Tugboat tug))
             _tugboat = tug;

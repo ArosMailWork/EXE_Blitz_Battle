@@ -18,7 +18,7 @@ public class ToggleUI : NetworkBehaviour
 
     public bool isOwner;
     public bool ToggleValueDebug;
-    private readonly SyncVar<bool> _ToggleisOnSync = new SyncVar<bool>();
+    public readonly SyncVar<bool> _ToggleisOnSync = new SyncVar<bool>();
 
     public override void OnStartClient()
     {

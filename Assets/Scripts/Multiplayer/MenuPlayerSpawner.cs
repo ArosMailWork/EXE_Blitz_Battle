@@ -53,13 +53,14 @@ public class MenuPlayerSpawner : NetworkBehaviour
     public void KickAllPlayer()
     {
         Debug.Log("host left");
-        _networkManager.ServerManager.Kick(ClientConn, KickReason.Unset);
+        if(!ClientConn.IsHost) _networkManager.ClientManager.StopConnection();
     }
 
     private void SceneManager_OnClientLoadedStartScenes(NetworkConnection conn, bool asServer)
     {
         ClientConn = conn;
         if (!asServer || !_Toggle) return;
+
         if (_playerPrefab == null)
         {
             Debug.LogWarning($"Player prefab is empty and cannot be spawned for connection {conn.ClientId}.");

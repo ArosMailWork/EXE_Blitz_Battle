@@ -18,6 +18,7 @@ public class LoadoutSelector : NetworkBehaviour
     public List<SnapScrollView> selectScrollViews;
     public List<ISkill> skillList;
     public Toggle LoadoutToggle;
+    public ToggleUI LoadoutToggleUI;
 
     [ReadOnly] public List<ISkill> SkillLoadout = new List<ISkill>();
 
@@ -41,6 +42,9 @@ public class LoadoutSelector : NetworkBehaviour
             ssv.LSelector = this;
             if (!isOwner) ssv._scrollRect.horizontal = false;
         }
+
+        RoomMenu.Instance.LoadoutSelectors.Add(this);
+        
     }
     public override void OnStopClient()
     {

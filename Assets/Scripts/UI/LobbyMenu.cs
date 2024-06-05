@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using FishNet;
 using FishNet.Component.Spawning;
 using JetBrains.Annotations;
 using TMPro;
@@ -9,7 +10,7 @@ using Toggle = UnityEngine.UIElements.Toggle;
 
 public class LobbyMenu : MonoBehaviour
 {
-    public static LobbyMenu instance;
+    public static LobbyMenu Instance;
 
     //[SerializeField] private GameObject menuScreen, lobbyScreen;
     [SerializeField] private TMP_InputField lobbyInput;
@@ -25,7 +26,7 @@ public class LobbyMenu : MonoBehaviour
     [SerializeField] private List<Transform> SpawnList;
     private PlayerSpawner _playerSpawner;
 
-    private void Awake() => instance = this;
+    private void Awake() => Instance = this;
     private void Start()
     {
         //OpenMainMenu();
@@ -34,46 +35,37 @@ public class LobbyMenu : MonoBehaviour
     
     public void CreateLobby()
     {
+        Invoke(nameof(doCreateLobby), 0.2f);
+    }
+    
+    public void doCreateLobby()
+    {
         BootstrapManager.Instance.CreateLobby();
-    }
-    public void OpenMainMenu()
-    {
-        //CloseAllScreens();
-        //menuScreen.SetActive(true);
-    }
-    public void OpenLobby()
-    {
-        //CloseAllScreens();
-        //lobbyScreen.SetActive(true);
+        startGameButton.enabled = true;
+        leaveButton.enabled = false;
     }
 
     
     public static void LobbyEntered(string lobbyName, bool isHost)
     {
-        if(instance.lobbyTitle != null) instance.lobbyTitle.text = lobbyName;
-        if(instance.lobbyTitle2 != null) instance.lobbyTitle2.text = lobbyName;
-        instance.startGameButton.gameObject.SetActive(isHost);
-        instance.leaveButton.gameObject.SetActive(!isHost);
-        if(instance.lobbySteamID != null) instance.lobbySteamID.text = BootstrapManager.CurrentLobbyID.ToString();
-        instance.CustomlobbyID.text = BootstrapManager.CurrentCustomLobbyID.ToString();
-        //instance.OpenLobby();
-    }
-    void CloseAllScreens()
-    {
-        //menuScreen.SetActive(false);
-        //lobbyScreen.SetActive(false);
+        if(Instance.lobbyTitle != null) Instance.lobbyTitle.text = lobbyName;
+        if(Instance.lobbyTitle2 != null) Instance.lobbyTitle2.text = lobbyName;
+        Instance.startGameButton.gameObject.SetActive(isHost);
+        Instance.leaveButton.gameObject.SetActive(!isHost);
+        if(Instance.lobbySteamID != null) Instance.lobbySteamID.text = BootstrapManager.CurrentLobbyID.ToString();
+        Instance.CustomlobbyID.text = BootstrapManager.CurrentCustomLobbyID.ToString();
     }
 
     
     public void JoinLobby()
     {
-        BootstrapManager.LeaveLobby();
         BootstrapManager.Instance.Join(lobbyInput.text);
+        startGameButton.enabled = false;
+        leaveButton.enabled = true;
     }
     public void LeaveLobby()
     {
         BootstrapManager.LeaveLobby();
-        OpenMainMenu();
     }
     public void StartGame(string sceneName)
     {

@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 5397717854999549592}
   - component: {fileID: 1343673443447060221}
   - component: {fileID: 4881383221753839356}
+  - component: {fileID: -1574863445624809383}
   m_Layer: 0
   m_Name: NetworkManager (Offline)
   m_TagString: Untagged
@@ -87,6 +88,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: be7d817d330b91149aac8ce4e4c4c4bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Toggle: 0
   _connectionType: 0
 --- !u!114 &5397717854999549592
 MonoBehaviour:
@@ -142,6 +144,23 @@ MonoBehaviour:
   _dropExcessiveReplicates: 1
   _maximumServerReplicates: 15
   _stateInterpolation: 1
+--- !u!114 &-1574863445624809383
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1639980941750067621}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b185516acd802904383e2a5f1a666750, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _boundingBoxLayer:
+    serializedVersion: 2
+    m_Bits: 448
+  _maximumRollbackTime: 1.25
+  Interpolation: 2
 --- !u!1001 &8003165320838039046
 PrefabInstance:
   m_ObjectHideFlags: 0

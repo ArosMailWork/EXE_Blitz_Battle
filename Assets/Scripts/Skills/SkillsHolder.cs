@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using Sirenix.OdinInspector;
-using Sirenix.Utilities.Editor;
 using UnityEngine;
 
 [Serializable]
@@ -37,7 +36,7 @@ public class SkillsHolder : NetworkBehaviour
             return;
         }
 
-        Debug.Log("Skill Holder" + base.LocalConnection + " " + _playerController.IsOwner);
+        //Debug.Log("Skill Holder" + base.LocalConnection + " " + _playerController.IsOwner);
         //execute load on client side Loadout then tell spawn XD
         if(loadoutSetter != null && _playerController.IsOwner) loadoutSetter.LoadSkill(ClientLoadoutSave.Instance.pickedSkills);
         SpawnSkillObj();

@@ -77,8 +77,8 @@ public class SnapScrollView : NetworkBehaviour
         //Calculate for Snap
         currentItem = Mathf.RoundToInt(-contentPanel.localPosition.x / (sampleListItem.rect.width + HLG.spacing));
         if (currentItem <= -1) currentItem = 0;
-        if (currentItem > ItemList.Length) currentItem = ItemList.Length;
-        
+        if (currentItem >= ItemList.Length) currentItem = ItemList.Length - 1;
+
         UpdateSyncValue(currentItem);
     }
     

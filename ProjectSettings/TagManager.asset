@@ -6,6 +6,8 @@ TagManager:
   tags:
   - PlayerMenuSpawner
   - GameSpawnPoint
+  - Platform
+  - Bullet
   layers:
   - Default
   - TransparentFX

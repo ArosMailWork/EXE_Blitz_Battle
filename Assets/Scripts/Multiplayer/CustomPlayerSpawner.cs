@@ -24,6 +24,7 @@ public class CustomPlayerSpawner : NetworkBehaviour
     [Tooltip("Prefab to spawn for the player.")]
     [SerializeField]
     private NetworkObject _playerPrefab;
+    public int setMaxLife = 3; 
 
     public string SpawnerTag;
     
@@ -145,6 +146,7 @@ public class CustomPlayerSpawner : NetworkBehaviour
             _networkManager.SceneManager.AddOwnerToDefaultScene(nob);
         
         CameraTracking.Instance.AddObj(nob.gameObject);
+        //GameManager.Instance.ScoreManager.SetStartLife(nob.GetComponent<PlayerController>(), setMaxLife);
     }
     
     #endregion
@@ -157,7 +159,7 @@ public class CustomPlayerSpawner : NetworkBehaviour
         public int tIndex;
     }
     
-    //Send shiet
+    //Send shiet to server again
     private void OnClientSpawnBroadcast(NetworkConnection networkConnection, Data data, Channel channel)
     {
         //Debug.Log("Through Client");
@@ -177,9 +179,9 @@ public class CustomPlayerSpawner : NetworkBehaviour
         var data = new Data() { conn = connInput };
         //Debug.Log("Seem like it worked, nice " + data.conn + InstanceFinder.IsServer);
         
-        if (InstanceFinder.IsServer)
+        if (InstanceFinder.IsServerStarted)
             InstanceFinder.ServerManager.Broadcast(data);
-        else if (InstanceFinder.IsClient)
+        else if (InstanceFinder.IsClientStarted)
             InstanceFinder.ClientManager.Broadcast(data);
     }
     

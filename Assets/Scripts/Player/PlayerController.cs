@@ -24,7 +24,7 @@ public struct FrameInput
 }
 public enum PlayerMovementStates
 {
-    Idle, Running, Dashing, Thrown, Snared, Charging, WallSticking, Hitted
+    Idle, Running, Dashing, Thrown, Snared, Charging, Hitted
 }
 public enum PlayerStates
 {
@@ -38,7 +38,8 @@ public class PlayerController : NetworkBehaviour
 
     #region Stats
     [FoldoutGroup("Stats")]
-    public string NickName;
+    private readonly SyncVar<int> PlayerIDSync = new SyncVar<int>(new SyncTypeSettings(1f));
+    public int PlayerID;
     [FoldoutGroup("Stats")]
     public int Team;
     [FoldoutGroup("Stats")]
@@ -131,7 +132,8 @@ public class PlayerController : NetworkBehaviour
     {
         defaultMaxSpeed = maxSpeed;
         DamagePercentageSync.Value = 0;
-        DamagePercentageSync.OnChange += UpdateInspector;
+        DamagePercentageSync.OnChange += UpdateDmgPercent;
+        PlayerIDSync.OnChange += UpdatePlayerID;
         rb = GetComponent<Rigidbody>();
         
         predictRB = new PredictionRigidbody();
@@ -147,6 +149,7 @@ public class PlayerController : NetworkBehaviour
         
         if (base.IsOwner)
         {
+            //PlayerIDSync.Value = LocalConnection.ClientId;
             //Debug.Log("owner");
         }
         else
@@ -157,8 +160,9 @@ public class PlayerController : NetworkBehaviour
             PlayerInput otherPlayerInput = gameObject.GetComponent<PlayerInput>();
             if(otherPlayerInput != null) otherPlayerInput.enabled = false;
         }
-        
-        Debug.Log("Add To CamView: " + base.LocalConnection);
+
+        playerAlive = true;
+        //Debug.Log("Add To CamView: " + base.LocalConnection);
         CameraTracking.Instance.AddObj(this.gameObject);
     }
 
@@ -173,7 +177,7 @@ public class PlayerController : NetworkBehaviour
 
     private void Update()
     {
-        ExtraGravity2();
+        ExtraGravity();
         GroundChecker();
         //LimitSpeed();
     }
@@ -242,7 +246,6 @@ public class PlayerController : NetworkBehaviour
         rb.useGravity = true;
         rb.velocity = DashDir * (playerVelBuffer.magnitude * DashMomentum);
     }
-
     void ApplyDash()
     {
         if (DashTimer <= 0) return;
@@ -257,15 +260,39 @@ public class PlayerController : NetworkBehaviour
         else
             rb.velocity = dashForce;
     }
+    
+    public void PlayerSpawnObj(NetworkObject obj , Vector3 pos, Quaternion rot)
+    {
+        Debug.Log("Spawn: " + obj.gameObject.name);
+        doSpawn(obj, transform.position + pos, rot);
+    }
 
-    /*
+    [ServerRpc]
+    void doSpawn(NetworkObject obj , Vector3 pos, Quaternion rot)
+    {
+        var spawnObj = Instantiate(obj, pos, rot);
+        base.Spawn(spawnObj);
+    }
+
+    
     public async UniTaskVoid Blink()
     {
         _currentMovementStates = PlayerMovementStates.Charging;
         
+        rb.velocity = Vector3.zero;
+        rb.useGravity = false;
+        
+        // Cast Time
+        await UniTask.Delay(TimeSpan.FromSeconds(1.5f));
+        
+        
     }
-    */
-    
+
+    void doBlink(Vector3 BlinkPos, Vector3 remainVel)
+    {
+        
+    }
+
     #endregion
 
     #region Basic Movements
@@ -273,22 +300,23 @@ public class PlayerController : NetworkBehaviour
     void Movement()
     {
         if (_frameInput.MoveInputVec != Vector2.zero) LastMove = _frameInput.MoveInputVec;
-        if(_currentMovementStates == PlayerMovementStates.Thrown) return;
+        if(_currentMovementStates == PlayerMovementStates.Thrown || 
+           _currentMovementStates == PlayerMovementStates.Charging ||
+           _currentMovementStates == PlayerMovementStates.Snared) return;
         if (_frameInput.MoveInputVec == Vector2.zero)
         {
             if(rb.velocity.magnitude <= 0.001f) _currentMovementStates = PlayerMovementStates.Idle;
             return;
         }
+        
         if(_currentMovementStates == PlayerMovementStates.Idle)
             _currentMovementStates = PlayerMovementStates.Running;
 
         Vector3 moveDir = new Vector3(_frameInput.MoveInputVec.x, 0, 0).normalized;
         if (!isGrounded)
-            //rb.AddForce(moveDir * (accel * 10f * airstrafe * Time.fixedDeltaTime), ForceMode.VelocityChange);
             rb.velocity = new Vector3(moveDir.x * (accel * airstrafe), rb.velocity.y, 0);
         else
             rb.velocity = new Vector3(moveDir.x * (accel), rb.velocity.y, 0);
-        //rb.AddForce(moveDir * (accel * 10f * Time.fixedDeltaTime), ForceMode.VelocityChange);
     }
     void Jump()
     {
@@ -327,9 +355,11 @@ public class PlayerController : NetworkBehaviour
         rb.AddForce(Dir * force, ForceMode.VelocityChange);
     }
 
-    void ExtraGravity2()
+    void ExtraGravity()
     {
-        if(_currentMovementStates == PlayerMovementStates.Dashing) return;
+        if(_currentMovementStates == PlayerMovementStates.Dashing || 
+           _currentMovementStates == PlayerMovementStates.Charging ||
+           _currentMovementStates == PlayerMovementStates.Thrown) return;
         
         if (rb.velocity.y < -0.5f)
             rb.velocity += Vector3.up * (Physics.gravity.y * (JumpMultiplier - 1) * Time.deltaTime);
@@ -425,13 +455,42 @@ public class PlayerController : NetworkBehaviour
         rb.AddForce(hitDirect * knockbackFactor, ForceMode.VelocityChange);
     }
 
+    [ServerRpc(RequireOwnership = false)]
+    public void Teleport(Vector3 pos)
+    {
+        NetworkObject.transform.position = pos;
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void PlayerRevive()
+    {
+        //invincible
+        _currentStates = PlayerStates.Invincible;
+        _currentMovementStates = PlayerMovementStates.Snared;
+    }
+
+    public void PlayerLifeAmountUpdate()
+    {
+        GameManager.Instance.PlayerDead(PlayerID);
+    }
+
+    public void PlayerDead()
+    {
+        playerAlive = false;
+    }
+
     #endregion
 
     #region Sync
 
-    private void UpdateInspector(float prev, float next, bool asServer)
+    private void UpdateDmgPercent(float prev, float next, bool asServer)
     {
         DamagePercentage = DamagePercentageSync.Value;
+    }
+
+    private void UpdatePlayerID(int prev, int next, bool asServer)
+    {
+        PlayerID = PlayerIDSync.Value;
     }
 
     #endregion

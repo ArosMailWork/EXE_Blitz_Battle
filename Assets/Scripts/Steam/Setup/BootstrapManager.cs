@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FishNet;
 using FishNet.Managing;
+using FishNet.Managing.Scened;
+using FishNet.Object;
 using NaughtyAttributes;
 using Sirenix.OdinInspector;
 using Steamworks;
@@ -15,7 +18,7 @@ public enum LobbyType
     Public ,FriendOnly, Private, PrivateUnique
 }
 
-public class BootstrapManager : MonoBehaviour
+public class BootstrapManager : NetworkBehaviour
 {
     public static BootstrapManager Instance;
     private void Awake() => Instance = this;
@@ -33,10 +36,10 @@ public class BootstrapManager : MonoBehaviour
     [SerializeField] private NetworkManager _networkManager;
     [SerializeField] private FishySteamworks.FishySteamworks _fishySteamworks;
 
-    protected Callback<LobbyCreated_t> LobbyCreated;
-    protected Callback<GameLobbyJoinRequested_t> JoinRequest;
-    protected Callback<LobbyEnter_t> LobbyEntered;
-    protected Callback<LobbyMatchList_t> Callback_lobbyList;
+    public Callback<LobbyCreated_t> LobbyCreated;
+    public Callback<GameLobbyJoinRequested_t> JoinRequest;
+    public Callback<LobbyEnter_t> LobbyEntered;
+    public Callback<LobbyMatchList_t> Callback_lobbyList;
 
     public static event Action OnGetLobbiesListCompleted;
 
@@ -61,24 +64,17 @@ public class BootstrapManager : MonoBehaviour
         {
             Debug.Log("First");
             Bootstrap_LoadScene(menuName);
-            //SceneManager.LoadScene(menuName, LoadSceneMode.Additive);
         }
     }
 
     public static void Bootstrap_LoadScene(string sceneName)
     {
-        //if(!InstanceFinder.IsServer) return;
-        
-        //SceneLoadData sld = new SceneLoadData(sceneName);
-        //sld.ReplaceScenes = ReplaceOption.None;
-        //InstanceFinder.SceneManager.LoadGlobalScenes(sld); //this one should work but somehow it didn't
-        //InstanceFinder.SceneManager.LoadConnectionScenes(sld);
-        
-        SceneManager.LoadScene(sceneName, LoadSceneMode.Additive); //this one work
+        UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName, LoadSceneMode.Additive); //this one work
     }
 
     public void CreateLobby()
     {
+        
         Debug.Log("its worked!!");
 
         switch (LobbyTypeCreate)
@@ -158,7 +154,7 @@ public class BootstrapManager : MonoBehaviour
                 duplicateFound = true; // Set flag to true to prevent multiple executions
                 SteamMatchmaking.SetLobbyData(SteamLobbyID, "SoraCustomID", CurrentCustomLobbyID);
                 Debug.Log("Lobby creation was successful: " + CurrentCustomLobbyID + " " + SteamLobbyID);
-                //_fishySteamworks.StartConnection(true);
+                _fishySteamworks.StartConnection(true);
             }
         };
     }
@@ -187,7 +183,7 @@ public class BootstrapManager : MonoBehaviour
     }
     private void OnJoinRequest(GameLobbyJoinRequested_t callback)
     {
-        MainMenuManager.Instance.LeaveLobby();
+        LobbyMenu.Instance.LeaveLobby();
         SteamMatchmaking.JoinLobby(callback.m_steamIDLobby);
     }
     private void OnLobbyEntered(LobbyEnter_t callback)
@@ -208,14 +204,12 @@ public class BootstrapManager : MonoBehaviour
     
     public void Join(string CustomID)
     {
-        LeaveLobby();
-        
         if (CustomID.Length > 15 && CustomID.All(char.IsDigit))
         {
             CSteamID steamID = new CSteamID(Convert.ToUInt64(CustomID));
             JoinByID(steamID);
         }
-        else
+        else if(CustomID.Length == CustomLobbyIDLength)
             JoinByCustomID(CustomID.ToString());
     }
     void JoinByID(CSteamID steamID)
@@ -223,6 +217,7 @@ public class BootstrapManager : MonoBehaviour
         Debug.Log("Attempting to join lobby with ID: " + steamID.m_SteamID);
         if (SteamMatchmaking.RequestLobbyData(steamID))
         {
+            LeaveLobby();
             SteamMatchmaking.JoinLobby(steamID);
             Debug.Log("SteamID Join Side Successed");
         }
@@ -247,7 +242,7 @@ public class BootstrapManager : MonoBehaviour
                 if (SteamMatchmaking.RequestLobbyData(selectedLobby))
                 {
                     // Join the selected lobby.
-                    SteamMatchmaking.JoinLobby(selectedLobby);
+                    JoinByID(selectedLobby);
                     Debug.Log("CustomID Join Succeeded");
                 }
                 else
@@ -269,7 +264,7 @@ public class BootstrapManager : MonoBehaviour
         CurrentLobbyID = 0;
         CurrentCustomLobbyID = "";
 
-        MainMenuManager.LobbyEntered("Lobby Name", false);
+        LobbyMenu.LobbyEntered("Lobby Name", false);
 
         Instance._fishySteamworks.StopConnection(false);
         if(Instance._networkManager.IsServerStarted)

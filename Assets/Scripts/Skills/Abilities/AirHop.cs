@@ -1,18 +1,26 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class AirHop : MonoBehaviour
+[CreateAssetMenu(menuName = "Skill/Ults/Air Hop")]
+public class AirHop : ISkill
 {
-    // Start is called before the first frame update
-    void Start()
+    public Vector3 PosOffset = new Vector3(0,-0.6f, 0);
+    public int health;
+    public float lifeTime;
+
+    private void Awake()
     {
-        
+        Platform platform = SkillPrefab.GetComponent<Platform>();
+        platform.SetHealth(health);
+        platform.SetLifeTime(lifeTime);
     }
 
-    // Update is called once per frame
-    void Update()
+    public override void SkillActive(PlayerController _playerController)
     {
-        
+        //_playerController.Dash().Forget();
+        Debug.Log("Air hop called");
+        _playerController.PlayerSpawnObj(SkillPrefab, PosOffset, Quaternion.identity);
     }
 }

@@ -25,7 +25,7 @@ public class ISkill : ScriptableObject
     public void Activate(PlayerController _playerController, SkillSlot skillSlot)
     {
         //Debug.Log(Name + ": Activated! CD: " + Cooldown);
-        if (SkillPrefab != null) SkillActiveAnimator(_playerController, skillSlot);
+        if (skillSlot.SkillPrefabNetworkAnimator != null) SkillActiveAnimator(_playerController, skillSlot);
         else SkillActive(_playerController);
     }
 

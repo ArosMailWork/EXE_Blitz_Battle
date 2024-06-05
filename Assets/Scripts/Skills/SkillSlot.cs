@@ -44,17 +44,22 @@ public class SkillSlot : NetworkBehaviour
     public void InitServer(GameObject obj, PlayerController setPCController)
     {
         _playerController = setPCController;
-        if (Skill != null && Skill.skillType == SkillType.Weaponary)
+        if (Skill != null)
         {
             //Spawn Prefab as a Child 
-            if (SkillPrefab == null)
+            if (SkillPrefab == null && Skill.SkillPrefab != null && Skill.skillType == SkillType.Weaponary)
             {
                 SkillPrefab = Instantiate(Skill.SkillPrefab, this.transform); 
                 SkillPrefab.SetParent(this);
                 base.Spawn(SkillPrefab, Owner); //must have ownership for the client authen in animator
                 Debug.Log("Spawned SkillSlot Prefab: " + _playerController.LocalConnection + _playerController.IsServer);
             }
-            AssignAnimators(SkillPrefab);
+            else
+            {
+                SkillPrefab = Skill.SkillPrefab;
+            }
+            
+            if(SkillPrefab != null && Skill.skillType == SkillType.Weaponary) AssignAnimators(SkillPrefab);
         } 
         
     }
@@ -62,7 +67,7 @@ public class SkillSlot : NetworkBehaviour
     [ObserversRpc]
     public void AssignAnimators(NetworkObject sp)
     {
-        if (sp == null && Skill.skillType == SkillType.Weaponary)
+        if (sp == null)
         {
             Debug.Log("Found no prefab");
             return;

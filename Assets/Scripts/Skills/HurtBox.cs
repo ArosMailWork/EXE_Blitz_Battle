@@ -75,7 +75,7 @@ public class HurtBox : NetworkBehaviour
             isOwner.ResetJumpCount(BonusJumpCount);
         }
 
-        if (other.gameObject.tag == "Player")
+        if (other.gameObject.tag == "Player" || other.gameObject.tag == "Platform" || other.gameObject.tag == "Bullet")
         {
             if (PogoHit && other.gameObject != isOwner.gameObject)
             {
@@ -84,7 +84,9 @@ public class HurtBox : NetworkBehaviour
             }
             
             //Debug.Log("Play Particle here");
-            dealDamage(other.gameObject.GetComponent<PlayerController>());
+
+            var pcontroller = other.gameObject.GetComponent<PlayerController>();
+            if(pcontroller != null) dealDamage(pcontroller);
         }
     }
     
