@@ -38,8 +38,16 @@ public class SkillsHolder : NetworkBehaviour
 
         //Debug.Log("Skill Holder" + base.LocalConnection + " " + _playerController.IsOwner);
         //execute load on client side Loadout then tell spawn XD
-        if(loadoutSetter != null && _playerController.IsOwner) loadoutSetter.LoadSkill(ClientLoadoutSave.Instance.pickedSkills);
+        if (loadoutSetter != null && _playerController.IsOwner)
+        {
+            loadoutSetter.LoadSkill(ClientLoadoutSave.Instance.pickedSkills);
+            
+            //just for convinience hehe
+            loadoutSetter.LoadColor(ClientLoadoutSave.Instance.SelectedColor);
+        }
         SpawnSkillObj();
+        
+        
     }
     public override void OnStopClient()
     {

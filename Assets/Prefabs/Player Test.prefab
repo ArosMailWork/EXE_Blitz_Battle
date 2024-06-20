@@ -190,7 +190,7 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 10
+  <PrefabId>k__BackingField: 13
   <SpawnableCollectionId>k__BackingField: 0
   _scenePathHash: 0
   <SceneId>k__BackingField: 0
@@ -425,7 +425,8 @@ MonoBehaviour:
   _componentIndexCache: 4
   _addedNetworkObject: {fileID: 566346509655115749}
   _networkObjectCache: {fileID: 566346509655115749}
-  NickName: Player
+  DummyMode: 0
+  PlayerID: 0
   Team: -1
   DamagePercentage: 0
   invincibleFrame: 0.1
@@ -498,6 +499,7 @@ MonoBehaviour:
   LastMove: {x: 0, y: 0}
   radius: 0.5
   maxLengthGroundCheck: 0.92
+  PlayerMat: {fileID: 2100000, guid: 46286ce2ae6e28544b6c5ee129b27f32, type: 2}
   skillsHolder: {fileID: 0}
   groundLayer:
     serializedVersion: 2
@@ -711,3 +713,4 @@ MonoBehaviour:
     ClientId: -1
   skillHolder: {fileID: 7662862149509259527}
   skillList: []
+  selectedColor: {r: 0, g: 0, b: 0, a: 0}

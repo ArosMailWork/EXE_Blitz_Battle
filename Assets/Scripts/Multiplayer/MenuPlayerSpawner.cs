@@ -128,6 +128,8 @@ public class MenuPlayerSpawner : NetworkBehaviour
             rot = result.transform.rotation;
         }
         
+        //Custom Color int set
+        prefab.GetComponent<LoadoutSelector>().selectedColorIndex = _nextSpawn + 1;
 
         //Increase next spawn and reset if needed.
         _nextSpawn++;

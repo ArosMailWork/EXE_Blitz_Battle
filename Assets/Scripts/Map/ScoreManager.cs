@@ -22,9 +22,10 @@ public class ScoreManager : NetworkBehaviour
 {
     public int maxLifeDefault = 3;
     
-    public readonly SyncDictionary<NetworkConnection, PlayerLifeAmount> _playerLifesSync = new();
-    [ShowInInspector] public Dictionary<NetworkConnection, PlayerLifeAmount> _playerLifes 
-                    = new Dictionary<NetworkConnection, PlayerLifeAmount>();
+    public readonly SyncDictionary<int, PlayerLifeAmount> _playerLifesSync 
+                    = new SyncDictionary<int, PlayerLifeAmount>(new SyncTypeSettings(1f));
+    [ShowInInspector] public Dictionary<int, PlayerLifeAmount> _playerLifes 
+                    = new Dictionary<int, PlayerLifeAmount>();
     
     public static ScoreManager Instance;
 
@@ -35,9 +36,9 @@ public class ScoreManager : NetworkBehaviour
     private void Start()
     {
         Instance = this;
+        GameManager.Instance.ScoreM = Instance;
     }
-
-    void _playerLifes_OnChange(SyncDictionaryOperation op, NetworkConnection key, PlayerLifeAmount value, bool asServer)
+    void _playerLifes_OnChange(SyncDictionaryOperation op, int key, PlayerLifeAmount value, bool asServer)
     {
         switch (op)
         {
@@ -46,6 +47,7 @@ public class ScoreManager : NetworkBehaviour
                 break;
             case SyncDictionaryOperation.Set:
                 _playerLifes[key] = value;
+                if(asServer) CheckWinner();
                 break;
             case SyncDictionaryOperation.Remove:
                 if (_playerLifes.ContainsKey(key)) _playerLifes.Remove(key);
@@ -54,43 +56,90 @@ public class ScoreManager : NetworkBehaviour
                 _playerLifes.Clear();
                 break;
             case SyncDictionaryOperation.Complete:
-                // Optional: Perform any additional logic after all operations are complete
                 break;
+        }
+
+    }
+    
+    void CheckWinner()
+    {
+        int playersWithLife = 0;
+        PlayerLifeAmount winner = new PlayerLifeAmount();
+        foreach (var playerLife in _playerLifes.Values)
+        {
+            if (playerLife.currentLife > 0)
+            {
+                playersWithLife++;
+                winner = playerLife;
+            }
+        }
+
+        Debug.Log("Check Winner: " + playersWithLife);
+        if (playersWithLife == 1)
+        {
+            GameManager.Instance.PlayerWonEnd(winner.ClientID);
         }
     }
 
-    [ServerRpc]
-    public void AddPlayer(NetworkConnection conn, PlayerController pController)
+    public bool PlayerLifeRemain(int PlayerID, int PredictModify = 0)
+    {
+        foreach (var LifeAmountData in _playerLifesSync.Values)
+        {
+            if(LifeAmountData.currentLife - PredictModify <= 0) return false;
+        }
+        return true;
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    public void AddPlayer(int ClientID, PlayerController pController)
     {
         PlayerLifeAmount newPlayer = new PlayerLifeAmount();
         //newPlayer.ClientID = ClientManager.Connection.ClientId;
-        newPlayer.ClientID = conn.ClientId;
+        newPlayer.ClientID = ClientID;
         newPlayer.pController = pController;
         newPlayer.maxLife = maxLifeDefault;
         newPlayer.currentLife = newPlayer.maxLife;
         
-        _playerLifesSync.Add(ClientManager.Connection, newPlayer);
+        //_playerLifesSync.Add(ClientManager.Connection.ClientId, newPlayer);
+        _playerLifesSync.Add(ClientID, newPlayer);
     }
     
-    public void PlayerLoseLife(int PlayerID, int amount = 1)
+    //[ServerRpc]
+    public void PlayerLoseLife(int PlayerID, int amount = 1) //server only
     {
-        
+        var keys = new List<int>(_playerLifesSync.Keys);
+        foreach (var key in keys)
+        {
+            var player = _playerLifesSync[key];
+            if (player.ClientID == PlayerID)
+            {
+                var updatedPlayer = player;
+                updatedPlayer.currentLife -= amount;
+                _playerLifesSync[key] = updatedPlayer;
+                
+                PlayerDead(player.ClientID);
+            }
+        }
     }
 
-    [ServerRpc]
-    void PlayerDead(int PlayerID, PlayerController pController)
+    public void PlayerDead(int PlayerID)
     {
-        doPlayerDead(PlayerID, pController);
+        doPlayerDead(PlayerID);
     }
-    [ObserversRpc]
-    void doPlayerDead(int PlayerID, PlayerController pController)
+    //[ObserversRpc]
+    void doPlayerDead(int PlayerID)
     {
         Debug.Log("PlayerID " + PlayerID + " Dead!!");
-        
-        if (pController)
+
+        foreach (var playerLifeData in _playerLifesSync)
         {
-            //call anything from pController here
+            if (playerLifeData.Value.ClientID == PlayerID && playerLifeData.Value.currentLife <= 0)
+            {
+                //call anything from pController here
+                playerLifeData.Value.pController.PlayerDead();
+            }
         }
+        
     }
 
 }

@@ -10,6 +10,7 @@ public class LoadoutSetter : NetworkBehaviour
     public NetworkConnection conn;
     public SkillsHolder skillHolder;
     public List<ISkill> skillList;
+    public Color selectedColor;
     
     [Button]
     [ServerRpc(RunLocally = true)]
@@ -19,5 +20,13 @@ public class LoadoutSetter : NetworkBehaviour
         
         skillList = pickedSkills;
         skillHolder.AssignSkills(pickedSkills);
+    }
+
+    [Button]
+    [ServerRpc(RunLocally = true)]
+    public void LoadColor(Color colorSet)
+    {
+        selectedColor = colorSet;
+        skillHolder._playerController.PlayerMat.color = selectedColor;
     }
 }

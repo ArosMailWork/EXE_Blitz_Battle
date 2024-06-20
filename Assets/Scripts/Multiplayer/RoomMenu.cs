@@ -37,8 +37,9 @@ public class RoomMenu : NetworkBehaviour
         {
             LoadoutSelectors.Remove(selector);
         }
-        if (ToggleFlag)  Global_LoadScene(sceneName);
+        if (ToggleFlag) Global_LoadScene(sceneName);
     }
+
     
     //Global
     [ObserversRpc]
@@ -64,7 +65,7 @@ public class RoomMenu : NetworkBehaviour
         SceneUnloadData sld = new SceneUnloadData(sceneName);
         InstanceFinder.SceneManager.UnloadGlobalScenes(sld);
     }
-
+    
     public void Host_LoadScene(string sceneName)
     {
         if(!InstanceFinder.IsServerStarted) return;

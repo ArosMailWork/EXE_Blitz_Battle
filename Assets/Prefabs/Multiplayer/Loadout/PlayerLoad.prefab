@@ -432,7 +432,7 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 5
+  <PrefabId>k__BackingField: 18
   <SpawnableCollectionId>k__BackingField: 0
   _scenePathHash: 0
   <SceneId>k__BackingField: 0
@@ -517,6 +517,13 @@ MonoBehaviour:
   CLSavePrefab: {fileID: 1412946182885336754, guid: 4d2427ed5e23fde49b134229064149da, type: 3}
   CLSaveC: {fileID: 0}
   isOwner: 0
+  selectedColorIndex: 0
+  PlayerColors:
+  - {r: 0, g: 0, b: 0, a: 1}
+  - {r: 1, g: 0.2867924, b: 0.2867924, a: 1}
+  - {r: 0.2867924, g: 0.35715303, b: 1, a: 1}
+  - {r: 0.75860095, g: 1, b: 0.22075468, a: 1}
+  - {r: 1, g: 0, b: 0.71989965, a: 1}
   selectScrollViews:
   - {fileID: 4836387738183201181}
   - {fileID: 5770404810406130065}

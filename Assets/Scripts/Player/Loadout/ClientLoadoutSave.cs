@@ -7,6 +7,7 @@ using UnityEngine;
 public class ClientLoadoutSave : NetworkBehaviour
 {
     public static ClientLoadoutSave Instance;
+    public Color SelectedColor;
     public List<ISkill> pickedSkills;
     public bool InstanceDebug;
 

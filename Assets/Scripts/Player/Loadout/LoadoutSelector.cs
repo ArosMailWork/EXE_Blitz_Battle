@@ -15,8 +15,11 @@ public class LoadoutSelector : NetworkBehaviour
     public NetworkObject CLSavePrefab;
     [ReadOnly, CanBeNull] public NetworkObject CLSaveC;
     public bool isOwner;
+    public int selectedColorIndex; //change this shit and the player color will change, yay
+    public List<Color> PlayerColors = new List<Color>();
     public List<SnapScrollView> selectScrollViews;
     public List<ISkill> skillList;
+    
     public Toggle LoadoutToggle;
     public ToggleUI LoadoutToggleUI;
 
@@ -99,6 +102,7 @@ public class LoadoutSelector : NetworkBehaviour
             //Debug.Log("Menu Load: " + selectedSkill.Name);
         }
         
+        LSelector.CLSaveC.GetComponent<ClientLoadoutSave>().SelectedColor = PlayerColors[selectedColorIndex];
         LSelector.CLSaveC.GetComponent<ClientLoadoutSave>().pickedSkills = LSelector.SkillLoadout;
     }
 }

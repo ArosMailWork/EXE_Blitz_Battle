@@ -108,6 +108,8 @@ public class PlayerController : NetworkBehaviour
     public float maxLengthGroundCheck = 1f;
 
     [FoldoutGroup("Setup")] 
+    public Material PlayerMat;
+    [FoldoutGroup("Setup")] 
     [CanBeNull] public SkillsHolder skillsHolder;
     [FoldoutGroup("Setup")] 
     public LayerMask groundLayer;
@@ -138,6 +140,7 @@ public class PlayerController : NetworkBehaviour
         DamagePercentageSync.OnChange += UpdateDmgPercent;
         PlayerIDSync.OnChange += UpdatePlayerID;
         rb = GetComponent<Rigidbody>();
+        PlayerMat = GetComponent<MeshRenderer>().material;
         
         predictRB = new PredictionRigidbody();
         predictRB.Initialize(rb);
@@ -163,11 +166,11 @@ public class PlayerController : NetworkBehaviour
             if(otherPlayerInput != null) otherPlayerInput.enabled = false;
         }
 
+        
         playerAlive = true;
         //Debug.Log("Add To CamView: " + base.LocalConnection);
-        CameraTracking.Instance.AddObj(this.gameObject);
-        if(IsOwner)
-        ScoreManager.Instance.AddPlayer(ClientManager.Connection, this);
+        CameraTracking.Instance.AddObj(this);
+        if(IsOwner) ScoreManager.Instance.AddPlayer(ClientManager.Connection.ClientId, this);
     }
 
     public override void OnStopClient()
@@ -204,6 +207,8 @@ public class PlayerController : NetworkBehaviour
     }
     public void JumpInput(InputAction.CallbackContext ctx)
     {
+        if(!playerAlive) return;
+        
         if (ctx.performed)
         {
             _frameInput.JumpHeld = true;
@@ -229,7 +234,7 @@ public class PlayerController : NetworkBehaviour
             _currentMovementStates == PlayerMovementStates.Thrown || 
             _currentMovementStates == PlayerMovementStates.Snared) return;
         
-        Debug.Log("Dashing !!!!");
+        //Debug.Log("Dashing !!!!");
         _currentMovementStates = PlayerMovementStates.Dashing;
         _currentStates = PlayerStates.ImmuneKB;
         
@@ -243,7 +248,7 @@ public class PlayerController : NetworkBehaviour
         //After
         await UniTask.Delay(TimeSpan.FromSeconds(DashTime + 0.1f));
         
-        Debug.Log("Dash done");
+        //Debug.Log("Dash done");
         _currentMovementStates = PlayerMovementStates.Idle;
         _currentStates = PlayerStates.NoDefense;
         maxSpeed = defaultMaxSpeed;
@@ -473,14 +478,24 @@ public class PlayerController : NetworkBehaviour
         _currentMovementStates = PlayerMovementStates.Snared;
     }
 
-    public void PlayerLifeAmountUpdate()
+    public void PlayerLifeAmountUpdate() //take the ID then sendto GameManager
     {
+        Debug.Log("Player ded: " + PlayerID);
         GameManager.Instance.PlayerDead(PlayerID);
     }
 
     public void PlayerDead()
     {
+        Debug.Log("I ded :b");
         playerAlive = false;
+        
+        //do sth to make sure the player cant do anything XD ahahahahaha
+        this.enabled = false;
+    }
+
+    public void Revive()
+    {
+        playerAlive = true;
     }
 
     #endregion

@@ -143,7 +143,7 @@ public class CustomPlayerSpawner : NetworkBehaviour
         if (_addToDefaultScene)
             _networkManager.SceneManager.AddOwnerToDefaultScene(nob);
         
-        CameraTracking.Instance.AddObj(nob.gameObject);
+        //CameraTracking.Instance.AddObj(nob.gameObject);
         //GameManager.Instance.ScoreManager.SetStartLife(nob.GetComponent<PlayerController>(), setMaxLife);
     }
     

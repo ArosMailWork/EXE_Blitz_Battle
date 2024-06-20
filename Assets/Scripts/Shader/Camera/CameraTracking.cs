@@ -1,13 +1,24 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using Cysharp.Threading.Tasks;
+using Sirenix.OdinInspector;
 using Unity.VisualScripting;
 using UnityEngine;
+
+[Serializable]
+public struct TrackingObject
+{
+    public int playerID;
+    public bool Tracking;
+    public GameObject obj;
+}
 
 public class CameraTracking : MonoBehaviour
 {
     public FocusLevel focusLevel;
-    public List<GameObject> players;
+    public List<TrackingObject> players;
     
     public float DepthAdjustSpeed = 5f;
     public float AngleAdjustSpeed = 7f;
@@ -21,6 +32,7 @@ public class CameraTracking : MonoBehaviour
 
     private float CameraEulerX;
     private Vector3 cameraPosition;
+    private float smoothVelocityX, smoothVelocityY, smoothVelocityZ;
 
     public static CameraTracking Instance;
 
@@ -29,9 +41,21 @@ public class CameraTracking : MonoBehaviour
         if (Instance == null) Instance = this;
     }
 
-    public void AddObj(GameObject playerAdd)
+    public void AddObj(PlayerController playerAdd)
     {
-        players.Add(playerAdd);
+        if (players.Any(player => player.obj == playerAdd))
+        {
+            Debug.Log("Player already exists in the tracking list.");
+            return;
+        }
+        
+        TrackingObject addObj = new TrackingObject();
+        addObj.Tracking = true;
+        addObj.obj = playerAdd.gameObject;
+        
+        if(!playerAdd.DummyMode) addObj.playerID = playerAdd.PlayerID;
+        else addObj.playerID = -2;
+        players.Add(addObj);
     }
 
     void LateUpdate()
@@ -44,8 +68,6 @@ public class CameraTracking : MonoBehaviour
         CalculateCameraLocation();
         MoveCamera();
     }
-
-    private float smoothVelocityX, smoothVelocityY, smoothVelocityZ;
     void MoveCamera()
     {
         Vector3 pos = gameObject.transform.position;
@@ -66,7 +88,6 @@ public class CameraTracking : MonoBehaviour
                 Vector3.MoveTowards(localEulerAngles, targetEulerAngles, AngleAdjustSpeed * Time.deltaTime);
         }
     }
-
     void CalculateCameraLocation()
     {
         Vector3 avgCenter = Vector3.zero;
@@ -75,8 +96,8 @@ public class CameraTracking : MonoBehaviour
 
         for (int i = 0; i < players.Count; i++)
         {
-            if(players[i] == null) continue;
-            Vector3 playerPos = players[i].transform.position;
+            if(players[i].obj == null || !players[i].Tracking) continue;
+            Vector3 playerPos = players[i].obj.transform.position;
             if (!focusLevel.FocusBounds.Contains(playerPos))
             {
                 float playerX = Mathf.Clamp(playerPos.x, focusLevel.FocusBounds.min.x, focusLevel.FocusBounds.max.x);
@@ -100,4 +121,43 @@ public class CameraTracking : MonoBehaviour
         CameraEulerX = angle;
         cameraPosition = new Vector3(avgCenter.x, avgCenter.y, depth);
     }
+
+    #region Ults
+
+    public async UniTaskVoid StopTrack(int playerID, float timeDelay = -1)
+    {
+        for (int i = 0; i < players.Count; i++)
+        {
+            if (players[i].playerID == playerID)
+            {
+                var updatedPlayer = players[i];
+                updatedPlayer.Tracking = false;
+                players[i] = updatedPlayer;
+                if (timeDelay > 0)
+                {
+                    await UniTask.Delay(TimeSpan.FromSeconds(timeDelay));
+                    updatedPlayer.Tracking = true;
+                    players[i] = updatedPlayer;
+                }
+            }
+        }
+    }
+    
+    public void ChangeTrackState(int playerID, bool toggle)
+    {
+        for (int i = 0; i < players.Count; i++)
+        {
+            if (players[i].playerID == playerID)
+            {
+                var updatedPlayer = players[i];
+                updatedPlayer.Tracking = toggle;
+                players[i] = updatedPlayer;
+                
+                Debug.Log("Player " + playerID + " Tracking State now is " + toggle);
+                return; // Exit the loop after updating the Tracking state
+            }
+        }
+    }
+
+    #endregion
 }
